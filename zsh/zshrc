@@ -1,0 +1,19 @@
+
+# Source Prezto.
+if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+fi
+
+zsh_dir="$HOME"
+env_files=(".zprofile" ".aliases")
+for env_file in $env_files; do
+    [[ -f "$zsh_dir/$env_file" ]] && source "$zsh_dir/$env_file"
+done
+
+
+PATH=$PATH:/sbin
+PATH=$PATH:~/bin
+PATH=$PATH:/usr/bin
+PATH=$PATH:/usr/sbin
+
+LS_COLORS="$LS_Colors:di=01;36"

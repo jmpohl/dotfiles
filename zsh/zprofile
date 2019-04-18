@@ -1,0 +1,13 @@
+if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then 
+	exec startx; 
+fi
+
+export EDITOR="vim"
+export TEXMFHOME="/home/josie/.config/texmf"
+export GOPATH="$HOME/.go"
+export PATH="$PATH:$GOPATH/bin"
+
+# IPFS command completion
+autoload bashcompinit
+bashcompinit
+source $HOME/.ipfs/completion.bash
