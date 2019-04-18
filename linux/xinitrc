@@ -1,0 +1,28 @@
+#!/bin/sh
+
+#userresources=$HOME/.Xresources
+#usermodmap=$HOME/.Xmodmap
+#sysmodmap=/etc/X11/xinit/.Xmodmap
+#
+## merge in defaults and keymaps
+#
+#if [ -f $sysresources ]; then
+#    xrdb -merge $sysresources
+#fi
+#
+#if [ -f $sysmodmap ]; then
+#    xmodmap $sysmodmap
+#fi
+
+xrdb ~/.Xresources
+
+setxkbmap -option caps:escape
+
+~/.fehbg &
+
+redshift &
+
+unclutter &
+
+exec i3
+

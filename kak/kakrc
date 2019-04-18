@@ -1,0 +1,38 @@
+## Hooks
+
+# add line numbers
+hook global WinCreate .* %{addhl number_lines}
+
+# add brackets highlighting
+hook global WinCreate .* %{addhl show_matching}
+
+# scroll offset
+set global scrolloff 12,12
+
+# tabs
+## 4-space tabs
+set global tabstop 4
+## soft tabs
+hook -group TabExpander global InsertChar \t %{ exec -draft h@}
+
+# auto wrap at 80 chars
+set global autowrap_column 80
+hook global WinCreate .* %{ autowrap-enable }
+
+# colors
+colorscheme new
+
+## clipboard
+# copy
+#<a-|> xsel --input --clipboard <ret>
+hook global NormalKey y|d|c %{ nop %sh{
+  printf %s "$kak_reg_dquote" | xsel --input --clipboard
+}}
+
+# paste
+map global user P '!xsel --output --clipboard<ret>'
+map global user p '<a-!>xsel --output --clipboard<ret>'
+
+# cpp stuff
+map global user b ':make main <ret>'
+map global user c ':make clean <ret>'
