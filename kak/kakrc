@@ -1,38 +1,320 @@
 ## Hooks
 
+# case-insensitive search
+map global user / '/(?i)' -docstring 'case-insensitive search'
+map global user s 's(?i)' -docstring 'case-insensitive select'
+map global user p '!pbpaste <ret>' -docstring 'paste from clipboard'
+# map global user S 'S(?i)'
+
 # add line numbers
-hook global WinCreate .* %{addhl number_lines}
+hook global KakBegin .* %{addhl global/ number-lines -relative}
+# highlight characters in 81st column
+#hook global BufCreate .*[.](md|tex) %{
+    #set buffer autowrap_column 80
+    #addhl regex ^\V{80}(\V) 1:Error
+#}
+hook global WinCreate .*[.](md|tex|rst) %{
+    set buffer autowrap_column 80
+    autowrap-enable
+}
 
 # add brackets highlighting
-hook global WinCreate .* %{addhl show_matching}
+hook global KakBegin .* %{addhl global/ show-matching}
+
+# highlight trailing whitespace at the end of lines
+hook -group TrailingWhitespaces global KakBegin .* %{
+    addhl global/ regex "[ \t]+$" 0:default,red
+}
+
+# colors
+colorscheme solarized2
 
 # scroll offset
-set global scrolloff 12,12
+set global scrolloff 12,0
 
 # tabs
 ## 4-space tabs
+set global indentwidth 4
 set global tabstop 4
-## soft tabs
-hook -group TabExpander global InsertChar \t %{ exec -draft h@}
+## 2-space tabs for Haskell
+hook global BufSetOption filetype=haskell %{
+    set buffer tabstop 2
+    set buffer indentwidth 2
+}
+hook global InsertChar \t %{ exec -draft -itersel h@ }
 
-# auto wrap at 80 chars
-set global autowrap_column 80
-hook global WinCreate .* %{ autowrap-enable }
+map global insert <backspace> ⌫
+hook global InsertChar ⌫ %{ try %{
+    execute-keys <backspace>
+    try %{
+        execute-keys -draft hGh <a-k>\A\h+\z<ret> <lt>
+    } catch %{
+        execute-keys <backspace>
+    }
+} }
 
-# colors
-colorscheme new
+def toggle-spell %{
+    try %{
+        addhl window/ ranges 'spell_regions'
+        spell
+    } catch %{ rmhl window/ranges_spell_regions }
+}
+map global user <a-s> :toggle-spell<ret> -docstring 'toggle spellcheck'
 
-## clipboard
-# copy
-#<a-|> xsel --input --clipboard <ret>
-hook global NormalKey y|d|c %{ nop %sh{
-  printf %s "$kak_reg_dquote" | xsel --input --clipboard
-}}
+# tab indents or tab-completes, depending on context
+hook global InsertCompletionShow .* %{
+    try %{
+        # this command temporarily removes cursors preceded by whitespace;
+        # if there are no cursors left, it raises an error, does not
+        # continue to execute the mapping commands, and the error is eaten
+        # by the `try` command so no warning appears.
+        execute-keys -draft 'h<a-K>\h<ret>'
+        map window insert <tab> <c-n>
+        map window insert <s-tab> <c-p>
+    }
+}
+hook global InsertCompletionHide .* %{
+    unmap window insert <tab> <c-n>
+    unmap window insert <s-tab> <c-p>
+}
 
-# paste
-map global user P '!xsel --output --clipboard<ret>'
-map global user p '<a-!>xsel --output --clipboard<ret>'
+# Tmux integration
+# ================
 
-# cpp stuff
-map global user b ':make main <ret>'
-map global user c ':make clean <ret>'
+def tmux-new %{
+    on-key %{ evaluate-commands %sh{
+        case "$kak_key" in
+            \\) echo tmux-terminal-horizontal kak -c %val{session} ;;
+            "<minus>") echo tmux-terminal-vertical kak -c %val{session} ;;
+        esac
+    } }
+}
+map global user t :tmux-new<ret> -docstring 'new tmux pane. \ or -'
+
+def repl-send %{
+    on-key %{ evaluate-commands %sh{
+        case "$kak_key" in
+            's') echo 'send-text' ;;
+            'l') echo 'exec hxH:send-text<ret>;exec ";"<ret>' ;;
+            'r') echo 'send-text; exec A<ret>; send-text; exec <esc>u' ;;
+        esac
+    } }
+}
+map global user r :repl-send<ret> -docstring 'send to repl. s: send selection, r: run'
+
+# Git
+# ===
+
+hook global WinSetOption filetype=diff %{
+    map window normal '@' /^@@<ret>
+    map window normal '#' /^diff\><ret>
+}
+
+# commenting
+def comment %{
+    on-key %{ evaluate-commands %sh{
+        case "$kak_key" in
+            'c') echo comment-line ;;
+            'b') echo 'exec <a-i>pH:comment-block<ret>' ;;
+        esac
+    } }
+}
+map global user c :comment<ret> -docstring 'comment. c: line, b: block'
+
+# Python
+# ======
+
+hook global BufSetOption filetype=python %!
+    map global user d 'iprint(f": {}")<esc>h<a-a>bs(?=[:}])<ret>i' -docstring "debug print statement"
+!
+
+# Markdown manipulation
+# =====================
+
+hook global BufSetOption filetype=(markdown|latex) %{
+    # build document
+    # map global user w %{ :nop "%sh{ alias_call md beamer ${kak_buffile}  }" <ret> }
+
+    # format text with pandoc
+    map global user g %{ | pandoc --from=markdown --to=markdown --columns=80 <ret> } -docstring 'format md'
+
+    # format github-flavored markdown with pandoc (utility, should be function)
+    map global user z %{ | pandoc --from=gfm --to=gfm --columns=80 <ret> } -docstring 'format gfm'
+
+    # custom commands
+    def header %{
+        on-key %{ evaluate-commands %sh{
+            case "$kak_key" in
+                '1') echo 'exec hxypjxHr=A<ret><esc>' ;;
+                '2') echo 'exec hxypjxHr-A<ret><esc>' ;;
+                '3') echo 'exec I###<space><esc>A<ret><esc>' ;;
+            esac
+        } }
+    }
+    map global user h :header<ret> -docstring 'headers'
+    #map global user b %{ | pandoc-citeproc --bib2yaml --format=biblatex <ret> }
+
+    def inline_code_helper %{ exec ',ea`f`a{.}<esc>;i' }
+    def inline_code %{
+        on-key %{ evaluate-commands %sh{
+            case $kak_key in
+                'i') echo inline_code_helper ;;
+                'h') echo 'inline_code_helper;exec hs<esc><ret>' ;;
+                'p') echo 'inline_code_helper;exec python<esc><ret>' ;;
+                'r') echo 'inline_code_helper;exec ruby<esc><ret>' ;;
+            esac
+        } }
+    }
+    map global user i :inline_code<ret> -docstring 'inline code'
+}
+
+hook global BufSetOption filetype=(restructuredtext) %{
+    # format text with pandoc
+    # map global user g %{ | pandoc --from=rst --to=rst --columns=80 <ret> } -docstring 'format md'
+    # format lines to 80 characters (escape backticks to preseve calls to default role)
+    map global user g %{ | sed 's/`/\\`/g' | pandoc --from=rst --to=rst --columns=81 | sed 's/\\`/`/g' <ret> } -docstring 'format md'
+
+    # custom commands
+    def -hidden header %{
+        on-key %{ evaluate-commands %sh{
+            case $kak_key in
+                1) echo 'exec hxypjxHr=A<ret><esc>' ;;
+                2) echo 'exec hxypjxHr-A<ret><esc>' ;;
+                3) echo 'exec hxypjxHr~A<ret><esc>' ;;
+                4) echo 'exec hxypjxHr+A<ret><esc>' ;;
+                5) echo 'exec hxypjxHr.A<ret><esc>' ;;
+            esac
+        } }
+    }
+    map global user h :header<ret> -docstring 'make header'
+
+    def -hidden role %{
+        info -title Roles %{
+d: default role
+i: literal
+m: math
+l: raw-latex
+t: todo
+b: blank todo
+c: cite todo
+r: blank role
+        }
+        on-key %{ evaluate-commands %sh{
+            case $kak_key in
+                d) echo 'exec -with-hooks i``<esc>hi' ;;
+                i) echo 'exec -with-hooks i````<esc>hhi' ;;
+                m) echo 'exec -with-hooks i:math:``<esc>hi' ;;
+                l) echo 'exec -with-hooks i:raw-latex:``<esc>hi' ;;
+                t) echo 'exec -with-hooks i:todo:``<esc>hi' ;;
+                b) echo 'exec -with-hooks i:hl-cyan:`TODO`<esc>' ;;
+                c) echo 'exec -with-hooks i:todo:`cite`<esc>' ;;
+                r) echo 'exec -with-hooks i::``<esc>hhhi' ;;
+            esac
+        } }
+    }
+    map global user r :role<ret> -docstring 'insert role'
+}
+
+def add-surround %!on-key %@exec %sh&
+  case "$kak_key" in
+      "<lt>") key="<" ;;
+      "<gt>") key=">" ;;
+      "<space>") key=" " ;;
+      \<*\>) echo ":echo<space>no<ret>"; exit 1 ;;
+      *) key="$kak_key" ;;
+  esac
+
+  open="$key"
+  close="$key"
+  case "$key" in
+      "("|")") open="("; close=")" ;;
+      "["|"]") open="["; close="]" ;;
+      "{"|"}") open="{"; close="}" ;;
+      "<"|">") open="<"; close=">" ;;
+  esac
+
+  epilogue=${close//?/H}
+
+  open=${open/</<lt>}
+  close=${close/>/<gt>}
+
+  open=${open/ /<space>}
+  close=${close/ /<space>}
+
+  echo "i$open<esc>a$close<esc>$epilogue"
+&@!
+
+def delete-surround %!on-key %@exec %sh&
+  case "$kak_key" in
+      "<lt>") key="<" ;;
+      "<gt>") key=">" ;;
+      "<space>") key=" " ;;
+      \<*\>) echo ":echo<space>no<ret>"; exit 1 ;;
+      "*"|"."|"?"|"\\") key="\\$kak_key" ;;
+      *) key="$kak_key" ;;
+  esac
+
+  open="$key"
+  close="$key"
+  case "$key" in
+      "("|")") open="\("; close="\)" ;;
+      "["|"]") open="\["; close="\]" ;;
+      "{"|"}") open="{"; close="}"   ;;
+      "<"|">") open="<"; close=">"   ;;
+  esac
+
+  open=${open/</<lt>}
+  close=${close/>/<gt>}
+
+  open=${open/ /<space>}
+  close=${close/ /<space>}
+
+  echo "<a-a>${kak_key}s${open}|${close}<ret>d<space>"
+&@!
+
+def surround %{
+    on-key %{ %sh{
+        case "$kak_key" in
+            a) echo add-surround
+               ;;
+            d) echo delete-surround
+               ;;
+        esac
+    } }
+}
+map global user e ":surround<ret>" -docstring 'surround. a: add, d: delete.'
+
+# Plugins
+# =======
+
+# LSP
+# ---
+
+hook global BufSetOption filetype=(python) %{
+    set-option global lsp_server_configuration pyls.configurationSources=['flake8']
+}
+hook global WinSetOption filetype=(go|python) %{
+#    hook -group lsp window InsertEnd .* lsp-formatting-sync
+#    hook -group lsp window BufWritePre .* lsp-formatting-sync
+    map global user g :lsp-formatting<ret> -docstring 'lsp format'
+}
+hook global BufSetOption filetype=(go|python|sh) %{
+    map global user i :lsp-hover<ret> -docstring 'hover lsp message for current line'
+    map global goto n "<esc>:lsp-find-error --include-warnings<ret>:lsp-hover<ret>" -docstring 'go to next lsp error'
+    map global goto p "<esc>:lsp-find-error --previous --include-warnings<ret>:lsp-hover<ret>" -docstring 'go to previous lsp error'
+    set global lsp_hover_anchor true
+}
+eval %sh{kak-lsp --kakoune -s $kak_session}
+lsp-enable
+#nop %sh{ (kak-lsp -s $kak_session -vvv ) > /tmp/kak-lsp.log 2>&1 < /dev/null & }
+
+# lineindent
+# ----------
+
+map global user l ":lineindent -1<ret>" -docstring "indent selection to preceding line's level"
+alias global li lineindent
+
+# Search Highlighting
+# -------------------
+set-face global search +bi
+add-highlighter global/search dynregex '%reg{/}' 0:search

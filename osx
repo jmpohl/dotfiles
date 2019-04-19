@@ -3,7 +3,7 @@
 defaults write com.apple.LaunchServices LSQuarantine -bool false
 
 # Stop iTunes from responding to the keyboard media keys
-launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist 2> /dev/null
+# launchctl unload -w /System/Library/LaunchAgents/com.apple.rcd.plist 2> /dev/null
 
 # Save screenshots to the Downloads
 defaults write com.apple.screencapture location -string "${HOME}/Downloads"
