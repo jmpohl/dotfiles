@@ -84,16 +84,19 @@
 # ]
 
 # open terminal, blazingly fast compared to iTerm/Hyper
-ralt - return : kitty --single-instance -d ~
+ralt - return : /Applications/Kitty.app/Contents/MacOS/kitty --single-instance -d ~
 
-# open Chrome
-ralt - g : open -na /Applications/Google\ Chrome.app
+# open Chromium
+ralt - g : open -na /Applications/Google\ Chrome.app/
 
 # open Chrome
 ralt + shift - m : jupyter notebook --notebook-dir /Users/jpohl
 
 # open Outlook
 ralt - m : open /Applications/Microsoft\ Outlook.app/
+
+# open Teams
+ralt - t : open /Applications/Microsoft\ Teams.app 
 
 # open cmus
 ralt - c : kitty -e cmus
@@ -106,8 +109,8 @@ ralt - e : chunkc tiling::desktop --layout bsp
 ralt - s : chunkc tiling::desktop --layout monocle
 
 # float / unfloat window and center on screen
-ralt - t : chunkc tiling::window --toggle float;\
-          chunkc tiling::window --grid-layout 4:4:1:1:2:2
+ralt - x : chunkc tiling::window --toggle float;\
+           chunkc tiling::window --grid-layout 4:4:1:1:2:2
 
 # kill focused window
 ralt + shift - q : chunkc tiling::window --close
@@ -129,25 +132,38 @@ shift + ralt - l : chunkc tiling::window --warp east
 
 ralt - r : chunkc tiling::desktop --rotate 90
 
+## move focused container to workspace
+#shift + ralt - 1 : chunkc tiling::window --send-to-monitor 2
+#shift + ralt - 2 : chunkc tiling::window --send-to-monitor 1
+#shift + ralt - 3 : chunkc tiling::window --send-to-desktop 1
+#shift + ralt - 4 : chunkc tiling::window --send-to-desktop 2
+#shift + ralt - 5 : chunkc tiling::window --send-to-desktop 3
+#shift + ralt - 6 : chunkc tiling::window --send-to-desktop 4
+
+## focus on desktop
+#ralt - 1 : chunkc tiling::monitor -f 2
+#ralt - 2 : chunkc tiling::monitor -f 1
+#ralt - 3 : chunkc tiling::desktop --focus 1
+#ralt - 4 : chunkc tiling::desktop --focus 2
+#ralt - 5 : chunkc tiling::desktop --focus 3
+#ralt - 6 : chunkc tiling::desktop --focus 4
+
 # move focused container to workspace
 shift + ralt - 1 : chunkc tiling::window --send-to-monitor 2
-shift + ralt - 2 : chunkc tiling::window --send-to-monitor 1
-shift + ralt - 3 : chunkc tiling::window --send-to-desktop 1
-shift + ralt - 4 : chunkc tiling::window --send-to-desktop 2
-shift + ralt - 5 : chunkc tiling::window --send-to-desktop 3
-shift + ralt - 6 : chunkc tiling::window --send-to-desktop 4
+shift + ralt - 2 : chunkc tiling::window --send-to-desktop 1
+shift + ralt - 3 : chunkc tiling::window --send-to-desktop 2
+shift + ralt - 4 : chunkc tiling::window --send-to-desktop 3
+shift + ralt - 5 : chunkc tiling::window --send-to-desktop 4
 
-# focus on desktop
 ralt - 1 : chunkc tiling::monitor -f 2
-ralt - 2 : chunkc tiling::monitor -f 1
-ralt - 3 : chunkc tiling::desktop --focus 1
-ralt - 4 : chunkc tiling::desktop --focus 2
-ralt - 5 : chunkc tiling::desktop --focus 3
-ralt - 6 : chunkc tiling::desktop --focus 4
+ralt - 2 : chunkc tiling::desktop --focus 1
+ralt - 3 : chunkc tiling::desktop --focus 2
+ralt - 4 : chunkc tiling::desktop --focus 3
+ralt - 5 : chunkc tiling::desktop --focus 4
 
 
 # create desktop, move window and follow focus
-shift + cmd - n : chunkc tiling::desktop --create;\
+shift + ralt - n : chunkc tiling::desktop --create;\
                   id=$(chunkc tiling::query --desktops-for-monitor $(chunkc tiling::query --monitor-for-desktop $(chunkc tiling::query --desktop id)));\
                   chunkc tiling::window --send-to-desktop $(echo ${id##* });\
                   chunkc tiling::desktop --focus $(echo ${id##* })
