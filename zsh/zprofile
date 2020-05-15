@@ -1,13 +1,23 @@
-if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then 
-	exec startx; 
+# General ENV
+export EDITOR="kak"
+export SRC="$HOME/src"
+
+# Python, don't create __pycache__
+export PYTHONDONTWRITEBYTECODE=1
+
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+if command -v pyenv 1>/dev/null 2>&1; then
+  eval "$(pyenv init -)"
 fi
 
-export EDITOR="vim"
-export TEXMFHOME="/home/josie/.config/texmf"
-export GOPATH="$HOME/.go"
-export PATH="$PATH:$GOPATH/bin"
+# By Pass MAC security surronding multithreading
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 
-# IPFS command completion
-autoload bashcompinit
-bashcompinit
-source $HOME/.ipfs/completion.bash
+# transcrypt for Xpress license (transcrypt -c aes-256-cbc -p 'm3QZZZf0hzEBnpAecIUVlnwWxZZhQwd/dTJNzewu')
+export TRANSCRYPT_PASSWORD="m3QZZZf0hzEBnpAecIUVlnwWxZZhQwd/dTJNzewu"
+
+# Source wenv stuff
+source "$SRC/wenv/wenv"

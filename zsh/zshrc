@@ -14,21 +14,18 @@ LS_COLORS="$LS_Colors:di=01;36"
 
 # Added for kitty
 # ---------------
-autoload -Uz compinit
-compinit -u
+autoload -Uz compinit && compinit -u
+autoload bashcompinit && bashcompinit
+source /usr/local/etc/bash_completion.d
+
 # Completion for kitty
 kitty + complete setup zsh | source /dev/stdin#
-
-function reopt_get(){
-    URL='http://127.0.0.1:8000/v1/job/$1/results'
-    curl -X GET $URL | jq '.' > $2
-}
-
-function reopt_post(){
-    curl -g -H "Content-Type: application/json" -X POST --data @$1 'http://127.0.0.1:8000/v1/job/'
-}
 
 function chpwd() {
     emulate -L zsh
     ls
 }
+
+# wenvs
+[[ -n "$WENV" ]] && wenv_exec -c "$WENV"
+source $SRC/wenv/completion.bash

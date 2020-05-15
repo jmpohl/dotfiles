@@ -8,15 +8,17 @@ map global user p '!pbpaste <ret>' -docstring 'paste from clipboard'
 
 # add line numbers
 hook global KakBegin .* %{addhl global/ number-lines -relative}
+
 # highlight characters in 81st column
-#hook global BufCreate .*[.](md|tex) %{
-    #set buffer autowrap_column 80
-    #addhl regex ^\V{80}(\V) 1:Error
-#}
+hook global BufCreate .*[.](md|tex) %{
+    set buffer autowrap_column 80
+    addhl regex ^\V{80}(\V) 1:Error
+}
 hook global WinCreate .*[.](md|tex|rst) %{
     set buffer autowrap_column 80
     autowrap-enable
 }
+map global user W '|fmt --width 80<ret>' -docstring "Wrap to 80 columns"
 
 # add brackets highlighting
 hook global KakBegin .* %{addhl global/ show-matching}
@@ -33,10 +35,10 @@ colorscheme solarized2
 set global scrolloff 12,0
 
 # tabs
-## 4-space tabs
+# 4-space tabs
 set global indentwidth 4
 set global tabstop 4
-## 2-space tabs for Haskell
+# 2-space tabs for Haskell
 hook global BufSetOption filetype=haskell %{
     set buffer tabstop 2
     set buffer indentwidth 2
@@ -284,37 +286,13 @@ def surround %{
 }
 map global user e ":surround<ret>" -docstring 'surround. a: add, d: delete.'
 
-# Plugins
-# =======
-
-# LSP
-# ---
-
-hook global BufSetOption filetype=(python) %{
-    set-option global lsp_server_configuration pyls.configurationSources=['flake8']
-}
-hook global WinSetOption filetype=(go|python) %{
-#    hook -group lsp window InsertEnd .* lsp-formatting-sync
-#    hook -group lsp window BufWritePre .* lsp-formatting-sync
-    map global user g :lsp-formatting<ret> -docstring 'lsp format'
-}
-hook global BufSetOption filetype=(go|python|sh) %{
-    map global user i :lsp-hover<ret> -docstring 'hover lsp message for current line'
-    map global goto n "<esc>:lsp-find-error --include-warnings<ret>:lsp-hover<ret>" -docstring 'go to next lsp error'
-    map global goto p "<esc>:lsp-find-error --previous --include-warnings<ret>:lsp-hover<ret>" -docstring 'go to previous lsp error'
-    set global lsp_hover_anchor true
-}
-eval %sh{kak-lsp --kakoune -s $kak_session}
-lsp-enable
-#nop %sh{ (kak-lsp -s $kak_session -vvv ) > /tmp/kak-lsp.log 2>&1 < /dev/null & }
-
-# lineindent
-# ----------
-
-map global user l ":lineindent -1<ret>" -docstring "indent selection to preceding line's level"
-alias global li lineindent
-
-# Search Highlighting
-# -------------------
-set-face global search +bi
-add-highlighter global/search dynregex '%reg{/}' 0:search
+## lineindent
+## ----------
+#
+#map global user l ":lineindent -1<ret>" -docstring "indent selection to preceding line's level"
+#alias global li lineindent
+#
+## Search Highlighting
+## -------------------
+#set-face global search +bi
+#add-highlighter global/search dynregex '%reg{/}' 0:search
