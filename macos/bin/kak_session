@@ -1,0 +1,14 @@
+#!/bin/bash
+
+server_name=$(echo "$1" | sed 's/\//-/')
+shift
+
+socket_file=$(kak -l | grep $server_name)
+
+if [[ $socket_file == "" ]]; then
+    # Create new kakoune daemon for passed
+    kak -d -s $server_name
+fi
+
+# and run kakoune (with any arguments passed to the script)
+kak -c $server_name $@
