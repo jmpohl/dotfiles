@@ -1,0 +1,73 @@
+#!/usr/bin/env zsh
+
+wenv_def() {
+    WENV_DIR="/Users/josiahpohl/Documents/SMART-TL"
+    WENV_DEPS=()
+    WENV_PROJECT=''
+    WENV_TASK=''
+    WENV_EXTENSIONS=('c' 'edit')
+
+    startup_wenv() {}
+    shutdown_wenv() {}
+    bootstrap_wenv() {}
+}
+
+# for c extension
+declare -Ag wenv_dirs=(
+    ["inputs"]="data/Carriers/RRTRANSP/f_input_ForJosiah"
+    ["outputs"]="data/Carriers/RRTRANSP/f_output_ForJosiah"
+)
+
+# for edit extension
+declare -Ag wenv_files=(
+    ["prompt"]="prompt.md"
+)
+
+alias kak="kak_session $WENV"
+alias container_shell="docker exec -it smart-tl_fleet-manager_1 /bin/bash"
+alias run="docker-compose -f $WENV_DIR/docker-compose.yml -f $WENV_DIR/docker-compose-run.yml up"
+
+source /Users/josiahpohl/Documents/SMART-TL/env/bin/activate
+
+clear_warm(){
+    input_dir=$WENV_DIR/data/Carriers/RRTRANSP/f_input_ForJosiah
+    for f in $(find $input_dir -name 'Warm*' ! -name '*bak'); do
+        rm -f $f && touch $f || return 1
+    done
+    echo "Reset files in $input_dir"
+}
+
+gen_data(){
+    set -x
+    carrier_dir=$WENV_DIR/data/Carriers/RRTRANSP
+    #config_json=$carrier_dir/f_input_ForJosiah/jsonCarrierOptimizationParameters.json
+    config_json=$carrier_dir/f_input_ForJosiah/jsonCarrierDriverTypeParameters.json
+    output_dir=$carrier_dir/f_output_ForJosiah
+    #results_dir=$output_dir/part2/loadCoverageBonus
+    results_dir=$output_dir/part2/unitCostEmptyRate
+
+    #rm -rf $results_dir/*
+    for x in 0 1 10 100 1000 10000; do
+
+        # start the scenario by clearing files and changing the inputs
+        echo "\n\nRunning Load Coverage Scenario: $x\n\n"
+        clear_warm
+        rm -f $output_dir/_accum_sumOuter.txt && touch $output_dir/_accum_sumOuter.txt
+        #json -I -f $config_json -e "this.loadCoverageBonus=$x" &&
+        json -f jsonCarrierDriverTypeParameters.json -e "this.unitCostEmptyRate=$x; this.unitCostEmptyToHome=$x;"
+
+            # Run the scenario and save the outputs we need for our graphs
+            run &&
+            mv $output_dir/RR_TuningExercise_report_dom.txt $results_dir/RR_TuningExercise_report_dom$x.txt &&
+            mv $output_dir/RR_TuningExercise_MovedLoads.txt $results_dir/RR_TuningExercise_MovedLoads$x.txt &&
+            mv $output_dir/RR_TuningExercise_UncoveredLoads.txt $results_dir/RR_TuningExercise_UncoveredLoads$x.txt &&
+            mv $output_dir/_accum_sumOuter.txt $results_dir/_accum_sumOuter$x.txt || {
+                # If the run and move fails then exit
+                echo "unsucessful" >&2
+                exit 1
+            }
+
+    done
+    set +x
+}
+
