@@ -4,11 +4,8 @@ ralt - return : kitty --single-instance -d ~
 # open Chrome
 ralt - g : open -na /Applications/Google\ Chrome.app
 
-# open Chrome
-ralt + shift - m : jupyter notebook --notebook-dir /Users/jpohl
-
 # open Outlook
-ralt - m : open /Applications/Microsoft\ Outlook.app/
+ralt - t : open /Applications/Slack.app/
 
 # open cmus
 ralt - c : kitty -e cmus
@@ -42,22 +39,15 @@ shift + ralt - l : yabai -m window --warp east
 ralt - r : yabai -m space --rotate 90
 
 # move focused container to workspace
-shift + ralt - 1 : yabai -m window --space 2
+shift + ralt - 1 : yabai -m window --display 2
 shift + ralt - 2 : yabai -m window --space 1
-shift + ralt - 3 : yabai -m window --space 3
-shift + ralt - 4 : yabai -m window --space 4
-shift + ralt - 5 : yabai -m window --space 5
-shift + ralt - 6 : yabai -m window --space 6
+shift + ralt - 3 : yabai -m window --space 2
+shift + ralt - 4 : yabai -m window --space 3
+shift + ralt - 5 : yabai -m window --space 4
 
 # focus on desktop
 ralt - 1 : yabai -m display --focus 2
-ralt - 2 : yabai -m display --focus 1
-ralt - 3 : yabai -m space --focus 3
-ralt - 4 : yabai -m space --focus 4
-ralt - 5 : yabai -m space --focus 5
-ralt - 6 : yabai -m space --focus 6
-
-# create desktop, move window - uses jq for parsing json (brew install jq)
-shift + ralt - n : yabai -m space --create && \
-                   index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-                   yabai -m space --focus "${index}"
+ralt - 3 : yabai -m space --focus 1
+ralt - 4 : yabai -m space --focus 2
+ralt - 5 : yabai -m space --focus 3
+ralt - 6 : yabai -m space --focus 4
