@@ -1,0 +1,3 @@
+#!/bin/zsh
+
+/Applications/Brave\ Browser.app/Contents/MacOS/Brave\ Browser $1 > /dev/null

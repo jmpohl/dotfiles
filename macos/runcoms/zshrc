@@ -1,0 +1,128 @@
+#!/bin/zsh
+
+# Homebrew Completions
+if type brew &>/dev/null; then
+  FPATH=$(brew --prefix)/share/zsh/site-functions:$FPATH
+fi
+
+# Added for kitty
+# ---------------
+autoload -Uz compinit && compinit -u
+autoload bashcompinit && bashcompinit
+source /usr/local/etc/bash_completion.d
+
+# Source Prezto.
+if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+fi
+
+LS_COLORS="$LS_Colors:di=01;36"
+
+alias kak="kak_session"
+alias finder="open -R ./"
+alias enter_gpg="pass show cwtb@live.com > /dev/null"
+alias btc="curl -s rate.sx/1btc"
+alias eth="curl -s rate.sx/1eth"
+alias gdiff="git diff --no-index"
+
+# Completion for kitty
+kitty + complete setup zsh | source /dev/stdin#
+
+function chpwd() {
+    emulate -L zsh
+    ls
+}
+
+# Do not record an event starting with a space
+setopt HIST_IGNORE_SPACE         
+# wenvs
+[[ -n "$WENV" ]] && wenv_exec -c "$WENV"
+source $SRC/wenv/completion.bash
+source $SRC/kjv/completion.bash
+
+wenv_prompt() {
+    [[ -n "$WENV" ]] && echo "($WENV) "
+}
+setopt prompt_subst
+PS1="\$(wenv_prompt)$PS1"
+
+kd() {
+    kak <<< $(l)
+}
+
+kwd() {
+    kak <<< $(pwd)
+}
+
+krp() {
+    kak <<< $(realpath $1)
+}
+
+# sk + ag to interactively search files
+skag() {
+    sk -m --ansi -i -c 'ag --color "{}"'
+}
+
+skrg() {
+    sk -m --ansi -i -c 'rg --color=always "{}"'
+}
+
+# open skag() result in kak
+skak() {
+    while getopts ":h" opt
+    do
+        case "$opt" in
+            (h) echo "usage: skak [-h]"
+                return 0 ;;
+            (\?) echo "unknown option: -$OPTARG" >&2
+                return 1 ;;
+        esac
+    done
+    shift $((OPTIND-1))
+    
+    local target=$(skag $@ | perl -pe 's/^(.*?):(\d+):\s*.*?$/\1 +\2/')
+    [[ -z "$target" ]] && return 1
+    eval $EDITOR $target
+}
+
+skaf() {
+    while getopts ":h:" opt
+    do
+        case "$opt" in
+            (h) echo "usage: skaf [-h] "
+                return 0 ;;
+            (\?) echo "unknown option: -$OPTARG" >&2
+                return 1 ;;
+        esac
+    done
+    shift $((OPTIND-1))
+    local target=$(sk)
+    [[ -z "$target" ]] && return 1
+    if [[ -f $target ]]
+    then
+        $EDITOR $target
+    else
+        [[ -d $target ]]
+        cd $target
+    fi
+}
+
+
+lfcd() {
+    tmp="$(mktemp)"
+    lf -last-dir-path="$tmp" "$@"
+    if [ -f "$tmp" ]; then
+        dir="$(cat "$tmp")"
+        rm -f "$tmp"
+        if [ -d "$dir" ]; then
+            if [ "$dir" != "$(pwd)" ]; then
+                cd "$dir"
+            fi
+        fi
+    fi
+}
+alias lf="lfcd"
+
+add_wenv_to_prompt() {
+    echo "TESTINGat $WENV \n$1"
+}

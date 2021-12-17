@@ -1,0 +1,31 @@
+
+# Source Prezto.
+if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+fi
+
+zsh_dir="$HOME"
+env_files=(".zprofile" ".aliases")
+for env_file in $env_files; do
+    [[ -f "$zsh_dir/$env_file" ]] && source "$zsh_dir/$env_file"
+done
+
+LS_COLORS="$LS_Colors:di=01;36"
+
+# Added for kitty
+# ---------------
+autoload -Uz compinit && compinit -u
+autoload bashcompinit && bashcompinit
+source /usr/local/etc/bash_completion.d
+
+# Completion for kitty
+kitty + complete setup zsh | source /dev/stdin#
+
+function chpwd() {
+    emulate -L zsh
+    ls
+}
+
+# wenvs
+[[ -n "$WENV" ]] && wenv_exec -c "$WENV"
+source $SRC/wenv/completion.bash

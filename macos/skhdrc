@@ -1,0 +1,98 @@
+# open terminal, blazingly fast compared to iTerm/Hyper
+ralt - return : /Applications/Kitty.app/Contents/MacOS/kitty --single-instance -d ~
+
+# open Chrome
+ralt - g : open -na /Applications/Brave\ Browser.app
+
+# open Chrome
+ralt + shift - m : jupyter notebook --notebook-dir /Users/jpohl
+
+# open Outlook
+ralt - m : open /Applications/Slack.app
+
+# cmus control
+ralt - c : cmus_control & cmus_notify
+ralt - b : cmus-remote -n & cmus_notify
+ralt - z : cmus-remote -r & cmus_notify
+
+# mpv control
+shift + ralt - c : echo '{ "command": ["set_property", "pause", true] }' | socat - /tmp/mpvsocket
+shift + ralt - x : echo '{ "command": ["set_property", "pause", false] }' | socat - /tmp/mpvsocket
+
+# enter fullscreen mode for the focused container
+ralt - f : yabai -m window --toggle zoom-fullscreen
+
+# change layout of desktop
+ralt - e : yabai -m space --layout bsp
+ralt - s : yabai -m space --layout stack
+
+# float / unfloat window and center on screen
+ralt - x : yabai -m window --toggle float;\
+           yabai -m window --grid 4:4:1:1:2:2
+
+# kill focused window
+ralt + shift - q : yabai -m window --close
+
+# change focus
+ralt - h : yabai -m window --focus west || yabai -m window --focus stack.next || yabai -m window --focus stack.first
+ralt - j : yabai -m window --focus south
+ralt - k : yabai -m window --focus north
+ralt - l : yabai -m window --focus east || yabai -m window --focus stack.prev || yabai -m window --focus stack.last
+
+# move focused window
+shift + ralt - h : yabai -m window --warp west
+shift + ralt - j : yabai -m window --warp south
+shift + ralt - k : yabai -m window --warp north
+shift + ralt - l : yabai -m window --warp east
+
+ralt - r : yabai -m space --rotate 90
+
+## Dual Monitor
+# move focused container to workspace
+shift + ralt - 1 : yabai -m window --display 2
+shift + ralt - 2 : yabai -m window --space 1
+shift + ralt - 3 : yabai -m window --space 2
+shift + ralt - 4 : yabai -m window --space 3
+shift + ralt - 5 : yabai -m window --space 4
+shift + ralt - 6 : yabai -m window --space 5
+shift + ralt - 7 : yabai -m window --space 6
+shift + ralt - 8 : yabai -m window --space 7
+shift + ralt - 9 : yabai -m window --space 8
+shift + ralt - 0 : yabai -m window --space 9
+
+# focus on desktop
+ralt - 1 : yabai -m display --focus 2
+ralt - 2 : yabai -m space --focus 1
+ralt - 3 : yabai -m space --focus 2
+ralt - 4 : yabai -m space --focus 3
+ralt - 5 : yabai -m space --focus 4
+ralt - 6 : yabai -m space --focus 5
+ralt - 7 : yabai -m space --focus 6
+ralt - 8 : yabai -m space --focus 7
+ralt - 9 : yabai -m space --focus 8
+ralt - 0 : yabai -m space --focus 9
+
+### Laptop Monitor Alone
+## move focused container to workspace
+#shift + ralt - 1 : yabai -m window --space 1
+#shift + ralt - 2 : yabai -m window --space 2
+#shift + ralt - 3 : yabai -m window --space 3
+#shift + ralt - 4 : yabai -m window --space 4
+#shift + ralt - 5 : yabai -m window --space 5
+#shift + ralt - 6 : yabai -m window --space 6
+#shift + ralt - 7 : yabai -m window --space 7
+#shift + ralt - 8 : yabai -m window --space 8
+#shift + ralt - 9 : yabai -m window --space 9
+#shift + ralt - 0 : yabai -m window --space 10
+#
+## focus on desktop
+#ralt - 1 : yabai -m space --focus 1
+#ralt - 2 : yabai -m space --focus 2
+#ralt - 3 : yabai -m space --focus 3
+#ralt - 4 : yabai -m space --focus 4
+#ralt - 5 : yabai -m space --focus 5
+#ralt - 6 : yabai -m space --focus 6
+#ralt - 7 : yabai -m space --focus 7
+#ralt - 8 : yabai -m space --focus 8
+#ralt - 9 : yabai -m space --focus 9
+#ralt - 0 : yabai -m space --focus 10

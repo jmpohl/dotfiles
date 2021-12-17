@@ -1,0 +1,147 @@
+#  NOTE(koekeishiya): A list of all built-in modifier and literal keywords can
+#                     be found at https://github.com/koekeishiya/skhd/issues/1
+#
+#                     A hotkey is written according to the following rules:
+#
+#                       hotkey       = <mode> '<' <action> | <action>
+#
+#                       mode         = 'name of mode' | <mode> ',' <mode>
+#
+#                       action       = <keysym> '[' <proc_map_lst> ']' | <keysym> '->' '[' <proc_map_lst> ']'
+#                                      <keysym> ':' <command>          | <keysym> '->' ':' <command>
+#                                      <keysym> ';' <mode>             | <keysym> '->' ';' <mode>
+#
+#                       keysym       = <mod> '-' <key> | <key>
+#
+#                       mod          = 'modifier keyword' | <mod> '+' <mod>
+#
+#                       key          = <literal> | <keycode>
+#
+#                       literal      = 'single letter or built-in keyword'
+#
+#                       keycode      = 'apple keyboard kVK_<Key> values (0x3C)'
+#
+#                       proc_map_lst = * <proc_map>
+#
+#                       proc_map     = <string> ':' <command>
+#
+#                       string       = '"' 'sequence of characters' '"'
+#
+#                       command      = command is executed through '$SHELL -c' and
+#                                      follows valid shell syntax. if the $SHELL environment
+#                                      variable is not set, it will default to '/bin/bash'.
+#                                      when bash is used, the ';' delimeter can be specified
+#                                      to chain commands.
+#
+#                                      to allow a command to extend into multiple lines,
+#                                      prepend '\' at the end of the previous line.
+#
+#                                      an EOL character signifies the end of the bind.
+#
+#                       ->           = keypress is not consumed by skhd
+#
+#  NOTE(koekeishiya): A mode is declared according to the following rules:
+#
+#                       mode_decl = '::' <name> '@' ':' <command> | '::' <name> ':' <command> |
+#                                   '::' <name> '@'               | '::' <name>
+#
+#                       name      = desired name for this mode,
+#
+#                       @         = capture keypresses regardless of being bound to an action
+#
+#                       command   = command is executed through '$SHELL -c' and
+#                                   follows valid shell syntax. if the $SHELL environment
+#                                   variable is not set, it will default to '/bin/bash'.
+#                                   when bash is used, the ';' delimeter can be specified
+#                                   to chain commands.
+#
+#                                   to allow a command to extend into multiple lines,
+#                                   prepend '\' at the end of the previous line.
+#
+#                                   an EOL character signifies the end of the bind.
+
+# add an on_enter command to the default mode
+# :: default : chunkc border::color 0xff775759
+#
+# defines a new mode 'test' with an on_enter command, that captures keypresses
+# :: test @ : chunkc border::color 0xff24ccaa
+#
+# from 'default' mode, activate mode 'test'
+# cmd - x ; test
+#
+# from 'test' mode, activate mode 'default'
+# test < cmd - x ; default
+#
+# launch a new terminal instance when in either 'default' or 'test' mode
+# default, test < cmd - return : open -na /Applications/Terminal.app
+
+# application specific bindings
+#
+# cmd - n [
+#     "kitty"       : echo "hello kitty"
+#     "qutebrowser" : echo "hello qutebrowser"
+#     "finder"      : false
+# ]
+
+# open terminal, blazingly fast compared to iTerm/Hyper
+ralt - return : /Applications/Kitty.app/Contents/MacOS/kitty --single-instance -d ~
+
+# open Chromium
+ralt - g : open -na /Applications/Google\ Chrome.app/
+
+# open Chrome
+ralt + shift - m : jupyter notebook --notebook-dir /Users/jpohl
+
+# open Outlook
+ralt - m : open /Applications/Microsoft\ Outlook.app/
+
+# open Teams
+ralt - t : open /Applications/Microsoft\ Teams.app 
+
+# open cmus
+ralt - c : kitty -e cmus
+
+# enter fullscreen mode for the focused container
+ralt - f : chunkc tiling::window --toggle fullscreen
+
+# change layout of desktop
+ralt - e : chunkc tiling::desktop --layout bsp
+ralt - s : chunkc tiling::desktop --layout monocle
+
+# float / unfloat window and center on screen
+ralt - x : chunkc tiling::window --toggle float;\
+           chunkc tiling::window --grid-layout 4:4:1:1:2:2
+
+# kill focused window
+ralt + shift - q : chunkc tiling::window --close
+
+# change focus
+ralt - h : chunkc tiling::window --focus west
+ralt - j : chunkc tiling::window --focus south
+ralt - k : chunkc tiling::window --focus north
+ralt - l : chunkc tiling::window --focus east
+
+ralt - p : chunkc tiling::window --focus prev
+ralt - n : chunkc tiling::window --focus next
+
+# move focused window
+shift + ralt - h : chunkc tiling::window --warp west
+shift + ralt - j : chunkc tiling::window --warp south
+shift + ralt - k : chunkc tiling::window --warp north
+shift + ralt - l : chunkc tiling::window --warp east
+
+ralt - r : chunkc tiling::desktop --rotate 90
+
+# move focused container to workspace
+shift + ralt - 1 : chunkc tiling::window --send-to-monitor 2
+shift + ralt - 2 : chunkc tiling::window --send-to-desktop 1
+shift + ralt - 3 : chunkc tiling::window --send-to-desktop 2
+shift + ralt - 4 : chunkc tiling::window --send-to-desktop 3
+shift + ralt - 5 : chunkc tiling::window --send-to-desktop 4
+
+# focus on desktop
+ralt - 1 : chunkc tiling::monitor -f 2
+ralt - 2 : chunkc tiling::desktop --focus 1
+ralt - 3 : chunkc tiling::desktop --focus 2
+ralt - 4 : chunkc tiling::desktop --focus 3
+ralt - 5 : chunkc tiling::desktop --focus 4

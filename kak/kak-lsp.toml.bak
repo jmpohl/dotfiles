@@ -1,0 +1,77 @@
+
+snippet_support = true
+verbosity = 2
+
+[semantic_scopes]
+# Map textmate scopes to kakoune faces for semantic highlighting
+# the underscores are translated to dots, and indicate nesting.
+# That is, if variable_other_field is omitted, it will try the face for
+# variable_other and then variable
+#
+# To see a list of available scopes in the debug buffer, run lsp-semantic-available-scopes
+variable = "variable"
+entity_name_function = "function"
+entity_name_type = "type"
+variable_other_enummember = "variable"
+entity_name_namespace = "module"
+
+# Semantic tokens support
+# See https://github.com/microsoft/vscode-languageserver-node/blob/8c8981eb4fb6adec27bf1bb5390a0f8f7df2899e/client/src/semanticTokens.proposed.ts#L288
+# for token/modifier types.
+
+[semantic_tokens]
+type = "type"
+variable = "variable"
+namespace = "module"
+function = "function"
+string = "string"
+keyword = "keyword"
+operator = "operator"
+comment = "comment"
+
+[semantic_modifiers]
+documentation = "documentation"
+readonly = "default+d"
+
+[server]
+# exit session if no requests were received during given period in seconds
+# works only in unix sockets mode (-s/--session)
+# set to 0 to disable
+timeout = 1800 # seconds = 30 minutes
+
+
+[language.java]
+filetypes = ["java"]
+roots = [".git"]
+command = "java"
+args = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044",
+        "-Declipse.application=org.eclipse.jdt.ls.core.id1",
+        "-Dosgi.bundles.defaultStartLevel=4",
+        "-Declipse.product=org.eclipse.jdt.ls.core.product",
+        "-Dlog.level=ALL",
+        "-noverify",
+        "-Xmx1G",
+        "-jar",
+        "/Users/josiahpohl/src/jdt-language-server-latest/plugins/org.eclipse.equinox.launcher_1.5.800.v20200727-1323.jar",
+        "-configuration",
+        "/Users/josiahpohl/src/jdt-language-server-latest/config_mac",
+        "--add-modules=ALL-SYSTEM",
+        "--add-opens",
+        "java.base/java.util=ALL-UNNAMED",
+        "--add-opens",
+        "java.base/java.lang=ALL-UNNAMED",
+        "-data",
+        "/Users/josiahpohl/src/jdt-language-server-latest"]
+
+
+[language.json]
+filetypes = ["json"]
+roots = ["package.json"]
+command = "json-languageserver"
+args = ["--stdio"]
+
+[language.python]
+filetypes = ["python"]
+roots = ["requirements.txt", "setup.py", ".git", ".hg"]
+command = "pyls"
+offset_encoding = "utf-8"

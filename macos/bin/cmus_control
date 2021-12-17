@@ -1,0 +1,7 @@
+#!/bin/zsh
+
+if ! pgrep -x cmus ; then
+  kitty -e cmus
+else
+  cmus-remote -u
+fi

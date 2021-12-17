@@ -1,0 +1,32 @@
+export PATH="$PATH:$HOME/bin"
+
+# General ENV
+export SRC="$HOME/src"
+export EDITOR="kak_session"
+export BROWSER="browser"
+#export TERM=xterm
+#export DISPLAY=localhost:0.0
+
+# Python, don't create __pycache__
+export PYTHONDONTWRITEBYTECODE=1
+
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+export PATH="/Users/josiahpohl/.pyenv/shims:${PATH}"
+
+# By Pass MAC security surronding multithreading
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+
+# transcrypt for Xpress license (transcrypt -c aes-256-cbc -p 'm3QZZZf0hzEBnpAecIUVlnwWxZZhQwd/dTJNzewu')
+export TRANSCRYPT_PASSWORD="m3QZZZf0hzEBnpAecIUVlnwWxZZhQwd/dTJNzewu"
+
+# Source wenv stuff
+source "$SRC/wenv/wenv"
+export MAGIC="/Users/josiahpohl/src/magic"
+export POC_DIR="/Users/josiahpohl/Documents/poc"
+export SMART_TL_DIR="/Users/josiahpohl/Documents/SMART-TL"
+export BLITZ_DIR="/Users/josiahpohl/Documents/blitz"
+
+# CPLEX
+export DYLD_LIBRARY_PATH="/Users/josiahpohl/src/IBM/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_osx"

@@ -1,0 +1,23 @@
+# General ENV
+export EDITOR="kak"
+export SRC="$HOME/src"
+
+# Python, don't create __pycache__
+export PYTHONDONTWRITEBYTECODE=1
+
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+if command -v pyenv 1>/dev/null 2>&1; then
+  eval "$(pyenv init -)"
+fi
+
+# By Pass MAC security surronding multithreading
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+
+# transcrypt for Xpress license (transcrypt -c aes-256-cbc -p 'm3QZZZf0hzEBnpAecIUVlnwWxZZhQwd/dTJNzewu')
+export TRANSCRYPT_PASSWORD="m3QZZZf0hzEBnpAecIUVlnwWxZZhQwd/dTJNzewu"
+
+# Source wenv stuff
+source "$SRC/wenv/wenv"

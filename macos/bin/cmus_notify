@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# obvious loop/array clean up needs to happen at some point
+
+sub_string="tag artist\s"
+artist_line=$(cmus-remote -Q| ag "${sub_string}")
+artist=$(perl -pe "s|$sub_string||" <<< $artist_line)
+
+sub_string="tag album\s"
+album_line=$(cmus-remote -Q| ag "${sub_string}")
+album=$(perl -pe "s|$sub_string||" <<< $album_line)
+
+sub_string="tag title\s"
+title_line=$(cmus-remote -Q| ag "${sub_string}")
+title=$(perl -pe "s|$sub_string||" <<< $title_line)
+
+osa="display notification \"$album\" with title \"$title\" subtitle \"$artist\""
+
+osascript -e "$osa"

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Declare server name without \'s
+server_name=$(sed 's/\//-/' <<< $1)
+shift
+
+# See if the socker file alread exists
+socket_file=$(kak -l | grep $server_name)
+
+# if the socket doesn't exist, create it
+[[ $socket_file == "" ]] && kak -d -s $server_name &
+
+# and run kakoune (with any arguments passed to the script)
+kak -c $server_name "$@"
