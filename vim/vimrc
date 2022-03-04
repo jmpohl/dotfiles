@@ -1,73 +1,13 @@
 " General
 " ======
 "" start w/ relative line numbers
-"set relativenumber
-
-" Plugins
-" =======
-"
-" vundle
-""filetype must be turned off before vundle commands
-filetype off
-""" set the runtime path to include vundle, and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-
-call vundle#begin()
-""" vundle modules to load
-Plugin 'VundleVim/Vundle.vim'
-Plugin 'vim-airline/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
-Plugin 'mbbill/undotree'
-"Plugin 'valloric/YouCompleteMe'
-"Plugin 'tpope/vim-markdown'
-"Plugin 'yuratomo/w3m.vim'
-call vundle#end()
-"
-""" helpful vundle hints (to be run inside vim)
-":PluginList - list plugins
-":PluginInstall - install plugins
-":PluginInstall! - update plugins
-":PluginSearch foo - search for plugin foo
-":PluginClean - remove unused plugins
-"
-"" turn filetype recognition back on
-filetype plugin indent on
-
-
-" save and load folds automatically
-"autocmd BufWinLeave *.* mkview!
-"autocmd BufWinEnter *.* silent loadview
+set relativenumber
 
 "" 'control+n' to reset highlighting (e.g. after a search or search/replace)
-"nnoremap <C-n> :nohl<CR>
+nnoremap <C-n> :nohl<CR>
 
-"" 'space + <char>' to insert character <char>
-nnoremap <Space> i_<Esc>r
-noremap J }
-noremap K {
-noremap H 0
-noremap L $
+"" set colorscheme
+colorscheme elflord
 
-"" show trailing spaces as '_', tabs as '>   '
-"set list listchars=tab:>\ ,eol:¬,extends:�,precedes:«
-"set list listchars=tab:\ \ ,trail:_,extends:»,precedes:«
-"map <leader>lc :set list!<cr>
-
-" status bar
-set laststatus=2
-let g:airline_theme='jellybeans'
-
-" Latex Stuff
-"autocmd BufRead,BufNewFile *.tex,*.md map @b :!build_pdf % <Return>
-autocmd BufRead,BufNewFile *.tex,*.md let @b=':wa:!build_pdf %'
-  \ | let @o=':!mupdf %:r.pdf &> /dev/null &'
-
-augroup Shebang
-  autocmd BufNewFile *.py 0put =\"#!/usr/bin/env python\<nl># -*- coding: iso-8859-15 -*-\<nl>\"|$
-  autocmd BufNewFile *.rb 0put =\"#!/usr/bin/env ruby\<nl># -*- coding: None -*-\<nl>\"|$
-  autocmd BufNewFile *.tex 0put =\"%&plain\<nl>\"|$
-  autocmd BufNewFile *.\(cc\|hh\) 0put =\"//\<nl>// \".expand(\"<afile>:t\").\" -- \<nl>//\<nl>\"|2|start!
-augroup END
-
-" Backspace Problems
-set backspace=indent,eol,start
+"" set spaces instead of tabs
+set tabstop=4 shiftwidth=4 expandtab
