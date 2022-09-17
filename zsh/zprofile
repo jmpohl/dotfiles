@@ -1,23 +1,15 @@
 # General ENV
 export EDITOR="kak"
 export SRC="$HOME/src"
+export XDG_CONFIG_HOME="$HOME/.config"
 
-# Python, don't create __pycache__
-export PYTHONDONTWRITEBYTECODE=1
+# `ls` colors
+export LS_COLORS=$LS_COLORS:'di=1;96:'
 
-# pyenv
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-
-if command -v pyenv 1>/dev/null 2>&1; then
-  eval "$(pyenv init -)"
-fi
-
-# By Pass MAC security surronding multithreading
-export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
-
-# transcrypt for Xpress license (transcrypt -c aes-256-cbc -p 'm3QZZZf0hzEBnpAecIUVlnwWxZZhQwd/dTJNzewu')
-export TRANSCRYPT_PASSWORD="m3QZZZf0hzEBnpAecIUVlnwWxZZhQwd/dTJNzewu"
-
-# Source wenv stuff
-source "$SRC/wenv/wenv"
+# source wenv file
+source $SRC/wenv/wenv
+# enable bash completion functions
+autoload bashcompinit
+bashcompinit
+# source wenv completion file
+source $SRC/wenv/completion.bash 2>/dev/null
