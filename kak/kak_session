@@ -1,0 +1,12 @@
+#!/bin/zsh
+
+if [[ -n $WENV ]]; then
+    server_name=$(sed 's/\//-/g' <<< $WENV)
+else
+    server_name="HOME"
+fi
+
+socket_file=$(kak -l | grep $server_name)
+[[ $socket_file == "" ]] && kak -d -s $server_name &
+
+kak -c $server_name "$@"
