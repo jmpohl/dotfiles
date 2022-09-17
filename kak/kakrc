@@ -16,13 +16,14 @@ hook global WinCreate .*[.](md|tex|rst) %{
     set buffer autowrap_column 80
     autowrap-enable
 }
-map global user W '|fmt --width 80<ret>' -docstring "Wrap to 80 columns"
 
 # add brackets highlighting
 hook global KakBegin .* %{addhl global/ show-matching}
 
 # X11 (copy/paste)
 # ===============
+map global user y 'y<a-|>xclip -i<ret>; :echo -color Information "copied selection to X11 clipboard"<ret>' -docstring 'copy to X clipboard'
+map global user p '!xclip -o <ret>' -docstring 'paste from X clipboard'
 
 # colors
 colorscheme solarized2
@@ -35,23 +36,18 @@ set global scrolloff 12,0
 set global indentwidth 4
 set global tabstop 4
 
+hook global InsertChar \t %{ try %{
+      execute-keys -draft "h<a-h><a-k>\A\h+\z<ret><a-;>;%opt{indentwidth}@"
+}}
+hook global InsertDelete ' ' %{ try %{
+      execute-keys -draft 'h<a-h><a-k>\A\h+\z<ret>i<space><esc><lt>'
+}}
+
 # 2-space tabs for json
 #hook global BufSetOption filetype=json %{
-hook global BufSetOption filetype=(java|json) %{
+hook global BufSetOption filetype=(java|json|tex) %{
     set buffer tabstop 2
     set buffer indentwidth 2
-}
-hook global InsertChar \t %{ exec -draft -itersel h@ }
-
-map global insert <backspace> ⌫
-hook global InsertChar ⌫ %{ try %{
-    execute-keys <backspace>
-    try %{
-        execute-keys -draft hGh <a-k>\A\h+\z<ret> <lt>
-    } catch %{
-        execute-keys <backspace>
-    }
-  }
 }
 
 # tab indents or tab-completes, depending on context
@@ -64,11 +60,11 @@ hook global InsertCompletionShow .* %{
         execute-keys -draft 'h<a-K>\h<ret>'
         map window insert <tab> <c-n>
         map window insert <s-tab> <c-p>
+        hook -once -always window InsertCompletionHide .* %{
+            unmap window insert <tab> <c-n>
+            unmap window insert <s-tab> <c-p>
+        }
     }
-}
-hook global InsertCompletionHide .* %{
-    unmap window insert <tab> <c-n>
-    unmap window insert <s-tab> <c-p>
 }
 
 hook global KakBegin .* %{
@@ -84,6 +80,10 @@ hook global KakBegin .* %{
             fi
         done
     }
+}
+
+hook global BufSetOption filetype=python %{
+    map global user d 'ifrom pprint import pprint; import ipdb;ipdb.set_trace(context=30)<esc>' -docstring "debug print statement"
 }
 
 # Plugins
@@ -134,18 +134,17 @@ plug "kak-lsp/kak-lsp" do %{
     map global user l ':enter-user-mode lsp<ret>' -docstring 'lsp'
 
     define-command lsp-restart -docstring 'restart lsp server' %{ lsp-stop; lsp-start }
-    hook global WinSetOption filetype=(java|json|python) %{
-        set-option window lsp_auto_highlight_references false
-        set-option window lsp_highlight_references false
-        set-option window lsp_hover_anchor false
-        set-option window lsp-inline-diagnostics true
-        echo -debug "Enabling LSP for filtetype %opt{filetype}"
-        lsp-enable-window
-        #lsp-auto-hover-enable
-        lsp-inline-diagnostics-enable window
-        lsp-inlay-diagnostics-enable window
-    }
     hook global KakEnd .* lsp-exit
+}
+
+hook global WinSetOption filetype=(json|kotlin|python) %{
+    set-option window lsp_auto_highlight_references false
+    set-option window lsp_hover_anchor false
+    echo -debug "Enabling LSP for filtetype %opt{filetype}"
+    lsp-enable-window
+    #lsp-auto-hover-enable
+    lsp-inline-diagnostics-enable window
+    lsp-inlay-diagnostics-enable window
 }
 
 plug 'delapouite/kakoune-cd' config %{
