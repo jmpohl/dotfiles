@@ -1,0 +1,4 @@
+#!/bin/zsh
+
+index=$(pacmd list-sinks | grep -B 1 "name: <bluez_sink.58_FC_C6_19_B8_6D.a2dp_sink>" | grep index | cut -f2 -d":")
+pacmd set-default-sink $index

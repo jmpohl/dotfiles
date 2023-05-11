@@ -1,0 +1,31 @@
+#!/bin/zsh
+
+# script for managing which player is selected by playerctl Used primarily for
+# managing pause/play functionality with bluetooth headphone (mapped with sxhkd)
+# Requires packages: mpd-mpris mpv-mpris playerctl
+
+# Need to setup playerctld.service to work on startup and mpd-mpris must be
+# running for control of mpd.
+
+# NOTE: do not use mpris-proxy, it intercepts the bluetooth controls and they
+# no longer register as keypresses
+
+declare -a players=($(playerctl -l))
+declare -a statuses=($(playerctl -a status))
+
+# create player cache dir if it doesn't exist
+[[ ! -d $HOME/.cache/player ]] && mkdir -p $HOME/.cache/player
+
+for i in {1..$#players}; do
+    if [[ $statuses[$i] == "Playing" ]]; then
+        echo $players[$i] > ~/.cache/player/default
+    fi
+done
+
+read default_player < ~/.cache/player/default
+
+if [[ -n $default_player ]]; then
+    playerctl -p $default_player $@
+else
+    playerctl $@
+fi

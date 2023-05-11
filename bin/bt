@@ -1,0 +1,44 @@
+#!/bin/zsh
+
+bt_tozo() {
+    tozo_id="58:FC:C6:19:B8:6D"
+    bluetoothctl connect $tozo_id
+    export BLUETOOTH_AUDIO_DEVICE=$tozo_id
+}
+
+bt_jabra() {
+    jabra_id="70:BF:92:4A:F2:B4"
+    bluetoothctl connect $jabra_id
+    export BLUETOOTH_AUDIO_DEVICE=$jabra_id
+}
+
+bt_disconnect() {
+    bluetoothctl disconnect
+}
+
+bt_fix() {
+    usb_modeswitch -R -v 8087 -p 0a2b
+}
+
+_get_current_dev_id() {
+    echo $(bluetoothctl info | head -n1 | cut -d' ' -f2 | sed "s/:/_/g")
+}
+
+bt_audio() {
+    pacmd set-card-profile bluez_card.$(_get_current_dev_id) a2dp_sink
+}
+
+bt_hands_free() {
+    pacmd set-card-profile bluez_card.$(_get_current_dev_id) handsfree_head_unit
+}
+
+bt_command="$1" && shift
+case "$bt_command" in
+    t|tozo)			 bt_tozo $@ ;;
+    j|jabra)		 bt_jabra $@ ;;
+    f|fix)			 bt_fix  $@ ;;
+    h|hf|hands_free) bt_hands_free $@ ;;
+    a|audio)		 bt_audio $@ ;;
+    d|disconnect)	 bt_disconnect $@ ;;
+    *)				 echo "Unrecognized command: '$bt_command'" ;;
+esac

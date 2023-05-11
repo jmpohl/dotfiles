@@ -1,0 +1,56 @@
+#!/bin/sh
+
+mail() {
+    num_unread=$(du -a ~/.local/share/mail/*/INBOX/new/* | wc -l)
+    echo "MAIL:$num_unread"
+}
+
+bat() {
+    bat1_charge=$(cat /sys/class/power_supply/BAT0/capacity)
+    bat2_charge=$(cat /sys/class/power_supply/BAT1/capacity)
+    total_bat_charge=$(( ($bat1_charge + $bat2_charge) / 2 ))
+
+    bat1_status=$(cat /sys/class/power_supply/BAT0/status)
+    bat2_status=$(cat /sys/class/power_supply/BAT1/status)
+
+    total_bat_status="BAT"
+    if [[ "$bat1_status" == "Charging" ]] || [[ "$bat2_status" == "Charging" ]]; then
+        total_bat_status="CHR"
+    fi
+
+    if [[ "$total_bat_status" == "BAT" ]] && [[ "$total_bat_charge" == "15" ]]; then
+		 notify-send "LOW BATTERY"
+    fi
+
+    echo "${total_bat_status}:$total_bat_charge"
+
+}
+
+wifi() {
+    wifi_quality=$(grep wlp3s0 /proc/net/wireless | perl -lane 'print substr($F[2], 0, index($x, ".")) ')
+    echo WIFI:$wifi_quality
+}
+
+volume() {
+    vol=$(pamixer --get-volume)
+    echo "VOL:${vol}"
+}
+
+temp() {
+    raw_temp=$(cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp1_input)
+    echo "$(( raw_temp/1000 ))°C"
+}
+
+_time() {
+    echo $(date '+%l:%M')
+}
+
+_date() {
+    echo $(date '+%D')
+}
+
+
+while :; do
+    xsetroot -name "$(mail)|$(bat)|$(wifi)|$(volume)|$(temp)|$(_date)|$(_time)"
+    sleep 100
+done
