@@ -1,0 +1,14 @@
+#!/usr/bin/expect
+
+set timeout 20
+
+spawn "/opt/cisco/anyconnect/bin/vpn"
+
+expect "VPN>" { send "connect \r" }
+expect "Connect Anyway?*" { send "y\r" }
+expect "Always trust this server and import the certificate?*:" { send "n\r" }
+expect "Group:*" { send "\r" }
+expect "Username: *" { send "\r" }
+expect "Password*" { send "\r" }
+expect "state: Connected" { send "exit\r" }
+interact
