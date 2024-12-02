@@ -4,6 +4,19 @@
 map global user / '/(?i)' -docstring 'case-insensitive search'
 map global user s 's(?i)' -docstring 'case-insensitive select'
 
+# revert breaking changes
+map global normal <space> ,
+map global normal , <space>
+define-command select-or-extend-lines %{
+  try %{
+    # At least one selection is not full, so select whole lines.
+    execute-keys -draft '<a-K>\A^.+\n\z<ret>'
+    execute-keys 'x'
+  } catch %{
+    execute-keys 'J'
+  }
+}
+
 # add line numbers
 hook global KakBegin .* %{addhl global/ number-lines -relative}
 
