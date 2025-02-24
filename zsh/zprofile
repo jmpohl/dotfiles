@@ -1,87 +1,46 @@
-# Source Prezto.
-if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
-  source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then
+	exec startx;
 fi
-source "$HOME/.zprofile"
 
-## ALIASES
-alias open='xdg-open'
-alias wifi='net w'
-alias kak="kak_session"
-alias kc="kak -clear"
-alias sukak="sudo -E kak"
+export PATH="$HOME/bin:$PATH"
+export PATH="$HOME/bin/statusbar:$PATH"
+#export PATH="$PATH:/opt/cisco/anyconnect/bin"
+export PATH="$PATH:$HOME/src/dwm"
+export PATH="$PATH:$HOME/src/st"
+export PATH="$PATH:/home/josie/.local/bin"
+export PATH="$PATH:/home/josie/src/jai/bin"
+#export PATH="$HOME/.local/Slippi-FM-r18/netplay:$PATH"
+export EDITOR="kak_session"
+export SRC=$HOME/src
+export TERM=xterm-256color
+export BROWSER=google-chrome-stable
+export XDG_CONFIG_HOME="$HOME/.config"
 
-## WENVS
-wenv_prompt() {
-	[[ -n "$WENV" ]] && echo "($WENV) "
-}
+# skak/skaf fzf/ag config
+export FZF_DEFAULT_OPTS='
+ --color=fg:#d1d1d1,bg:#0a0909,hl:#d6c22b
+ --color=fg+:#ffffff,bg+:#2a2a2a,hl+:#ebd636
+ --color=info:#bf658c,prompt:#d7005f,pointer:#21c8ff
+ --color=marker:#40bdd6,spinner:#d7005f,header:#87afaf'
+export FZF_DEFAULT_COMMAND="find . -type f ! -path '*/\.git/*' ! -path '*/\node_modules/*'"
 
-setopt prompt_subst
-PS1="\$(wenv_prompt)$PS1"
-setopt HIST_IGNORE_SPACE
+# Python, don't create __pycache__
+export PYTHONDONTWRITEBYTECODE=1
 
-# wenvs tmux integration
-[[ -n "$WENV" ]] && wenv_exec -c "$WENV"
+# source wenv file
+source $SRC/wenv/wenv
+# enable bash completion functions
+autoload bashcompinit
+bashcompinit
+# source wenv completion file
+source $SRC/wenv/completion.bash 2>/dev/null
 
-## FUNCTIONS
-chpwd() {
-    emulate -L zsh
-    ls
-}
+# `ls` colors
+export LS_COLORS=$LS_COLORS:'di=1;96:'
 
-# sk + ag to interactively search files
-skag() {
-    export AG_PREFIX='ag --color --hidden --ignore node_modules --ignore .git --ignore env'
-    fzf --ansi --query="$@" --delimiter : --bind "enter:execute(kak_session {1})"
-}
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
 
-
-# open skag() result in kak
-skak() {
-    export AG_PREFIX='ag --color --hidden --ignore node_modules --ignore .git --ignore env'
-    if [[ -n "$@" ]]; then
-        fzf --ansi --disabled \
-            --delimiter : \
-            --query $@ \
-            --bind "start:reload:$AG_PREFIX {q} || true" \
-            --bind "change:reload:$AG_PREFIX {q} || true" \
-            --bind "enter:execute($EDITOR {1} +{2})+reload:$AG_PREFIX {q} || true"
-    else
-        fzf --ansi --disabled \
-            --delimiter : \
-            --bind "start:reload:$AG_PREFIX {q} || true" \
-            --bind "change:reload:$AG_PREFIX {q} || true" \
-            --bind "enter:execute($EDITOR {1} +{2})+reload:$AG_PREFIX {q} || true"
-    fi
-}
-
-skaf() {
-    fzf --ansi --delimiter : --bind "enter:execute(kak_session {1})"
-}
-
-lfcd() {
-    tmp="$(mktemp)"
-    lfub -last-dir-path="$tmp" "$@"
-    if [ -f "$tmp" ]; then
-        dir="$(cat "$tmp")"
-        rm -f "$tmp"
-        if [ -d "$dir" ]; then
-            if [ "$dir" != "$(pwd)" ]; then
-                cd "$dir"
-            fi
-        fi
-    fi
-}
-alias lf='lfcd'
-
-kwd() {
-    kak <<< $(pwd)
-}
-
-kd() {
-    kak <<< $(ls)
-}
-
-krp() {
-    kak <<< $(realpath $1)
-}
+export JIRA_API_TOKEN="6320OXnw6QnuL30IAofI858E"

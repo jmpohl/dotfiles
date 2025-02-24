@@ -1,20 +1,17 @@
-
 # Source Prezto.
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
+source "$HOME/.zprofile"
 
-zsh_dir="$HOME"
-env_files=(".zprofile" ".aliases")
-for env_file in $env_files; do
-    [[ -f "$zsh_dir/$env_file" ]] && source "$zsh_dir/$env_file"
-done
-
+## ALIASES
+alias open='xdg-open'
+alias wifi='net w'
 alias kak="kak_session"
 alias kc="kak -clear"
 alias sukak="sudo -E kak"
-alias enter_gpg="pass show cwtb@live.com >> /dev/null"
 
+## WENVS
 wenv_prompt() {
 	[[ -n "$WENV" ]] && echo "($WENV) "
 }
@@ -26,61 +23,40 @@ setopt HIST_IGNORE_SPACE
 # wenvs tmux integration
 [[ -n "$WENV" ]] && wenv_exec -c "$WENV"
 
-function chpwd() {
+## FUNCTIONS
+chpwd() {
     emulate -L zsh
     ls
 }
 
 # sk + ag to interactively search files
 skag() {
-    sk -m --ansi -i -c 'ag --color "{}"' --cmd-query="$(echo $@)"
+    export AG_PREFIX='ag --color --hidden --ignore node_modules --ignore .git --ignore env'
+    fzf --ansi --query="$@" --delimiter : --bind "enter:execute(kak_session {1})"
 }
 
 
 # open skag() result in kak
 skak() {
-    while getopts ":h" opt; do
-        case "$opt" in
-            h)
-                echo "usage: skak [-h]"
-                return 0
-                ;;
-            \?)
-                echo "unknown option: -$OPTARG" >&2
-                return 1
-                ;;
-        esac
-    done
-    shift $((OPTIND-1))
-
-    local target=$(skag $@ | perl -pe 's/^(.*?):(\d+):\s*.*?$/\1 +\2/')
-    [[ -z "$target" ]] && return 1
-    eval $EDITOR $target
+    export AG_PREFIX='ag --color --hidden --ignore node_modules --ignore .git --ignore env'
+    if [[ -n "$@" ]]; then
+        fzf --ansi --disabled \
+            --delimiter : \
+            --query $@ \
+            --bind "start:reload:$AG_PREFIX {q} || true" \
+            --bind "change:reload:$AG_PREFIX {q} || true" \
+            --bind "enter:execute($EDITOR {1} +{2})+reload:$AG_PREFIX {q} || true"
+    else
+        fzf --ansi --disabled \
+            --delimiter : \
+            --bind "start:reload:$AG_PREFIX {q} || true" \
+            --bind "change:reload:$AG_PREFIX {q} || true" \
+            --bind "enter:execute($EDITOR {1} +{2})+reload:$AG_PREFIX {q} || true"
+    fi
 }
-# alias skaf='skak -f'
 
 skaf() {
-    while getopts ":h:" opt; do
-        case "$opt" in
-            h)
-                echo "usage: skaf [-h] "
-                return 0
-                ;;
-            \?)
-                echo "unknown option: -$OPTARG" >&2
-                return 1
-                ;;
-        esac
-    done
-    shift $((OPTIND-1))
-
-    local target=$(sk)
-    [[ -z "$target" ]] && return 1
-    if [[ -f $target ]]; then
-        $EDITOR $target
-    else [[ -d $target ]]
-        cd $target
-    fi
+    fzf --ansi --delimiter : --bind "enter:execute(kak_session {1})"
 }
 
 lfcd() {
