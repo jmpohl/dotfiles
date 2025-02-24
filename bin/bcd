@@ -1,0 +1,9 @@
+#!/bin/zsh
+
+# Script for automatically taking a bandcamp link and adding it to beets library
+
+dir=$(mktemp -d)
+
+yt-dlp --add-metadata -o '%(title)s.%(ext)s' -P $dir $1 &&
+    beet import $dir &&
+    rm -rf $dir

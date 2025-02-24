@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+disk=$(lsblk | grep 'sd[a-f][0-9]' | cut -d' ' -f 1 | sed 's/└─//' | sed 's/├─//' | dmenu)
+
+sudo mount /dev/$disk /media/usb_storage -o rw,uid=1000,gid=1000

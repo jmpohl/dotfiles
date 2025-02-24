@@ -1,5 +1,5 @@
-library   : /Users/josiahpohl/.config/beets/library.blb
-directory : /Users/josiahpohl/Music/beets_library/
+library   : /home/josie/.config/beets/library.blb
+directory : /home/josie/music
 import:
     write              : yes
     copy               : no
@@ -9,9 +9,10 @@ import:
     detail             : yes
     color              : yes
     threaded           : yes
-    per_disc_numbering : no
-plugins: inline fromfilename duplicates missing bandcamp mbsync ydl
+    per_disc_numbering : yes
+plugins: inline fromfilename duplicates missing mbsync fetchart edit
 match:
+    ignored  : missing_tracks unmatched_tracks
     preferred:
         countries     : ['US']
         media         : ['CD', 'Digital Media|File']
@@ -25,3 +26,5 @@ paths:
     default   : $albumartist/[$original_year-$original_month] $album/$track_title_snake
     singleton : etc/no-album/$artist/$track_title_snake
     comp      : etc/compilations/[$original_year] $album/$track_title_snake
+fetchart:
+    sources: coverart itunes amazon albumart wikipedia google fanarttv lastfm

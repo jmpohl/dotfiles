@@ -1,0 +1,26 @@
+#!/bin/zsh
+
+chrome_pd() {
+    google-chrome-stable --profile-directory="Profile 2" $@
+}
+
+chrome_swa() {
+    google-chrome-stable --profile-directory="Profile 1" $@
+}
+
+chrome_mmsi() {
+    google-chrome-stable --profile-directory="test" $@
+}
+
+chrome_me() {
+    google-chrome-stable --profile-directory="Default" $@
+}
+
+chrome_command="$1" && shift
+case "$chrome_command" in
+    p|pd)   chrome_pd $@ ;;
+    s|swa)  chrome_swa $@ ;;
+    k|mmsi) chrome_mmsi  $@ ;;
+    m|me)   chrome_me $@ ;;
+    *)      echo "Unrecognized command: '$chrome_command'" ;;
+esac

@@ -1,0 +1,10 @@
+#!/bin/zsh
+
+# find printer
+avahi-browse --all --ignore-local --resolve --terminate
+
+# add printer
+lpadmin -p home_office -E -v ipp://192.168.0.249/ipp/print -m everywhere
+
+# print document specifying printer name and filename
+lpr -P home_office downloads/gratherway.pdf

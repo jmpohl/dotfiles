@@ -4,7 +4,7 @@ screen_one() {
     num_active_screens=$(xrandr --listmonitors | head -n1 | cut -d ' ' -f2 -)
 
     if [[ $num_active_screens -gt  1 ]]; then
-        display_2=$(xrandr --listmonitors | grep -Eo "(HDMI(1|2)|DP(1|2)-(1|2))$")
+        display_2=$(xrandr --listmonitors | grep -Eo "(HDMI([1-3])|DP([1-3])-([1-3]))$")
         xrandr --output $display_2 --off
     else
         echo "Only one active monitor detected"
@@ -12,17 +12,16 @@ screen_one() {
 }
 
 screen_two() {
-    display_2=$(xrandr | grep -E "^(DP|HDMI)(1|2).* connected" | cut -d" " -f1)
+    display_2=$(xrandr | grep -E "^(DP|HDMI)([1-3]).* connected" | cut -d" " -f1)
+
+    xrandr --addmode $display_2 1920x1080
 
     xrandr --output eDP1 --mode 1920x1080 \
            --output $display_2 --primary --mode 1920x1080 --pos 1920x0
-
-    setxkbmap -option ctrl:nocaps,altwin:swap_lalt_lwin
-    killall xcape 2>/dev/null ; xcape -e 'Control_L=Escape'
 }
 
 screen_auto(){
-    (xrandr | grep -Eq "^(DP|HDMI)(1|2).* connected" &&
+    (xrandr | grep -Eq "^(DP|HDMI)([1-3]).* connected" &&
         screen_two) ||
         screen_one
 }

@@ -16,6 +16,7 @@ define-command select-or-extend-lines %{
     execute-keys 'J'
   }
 }
+map global normal 'X' ': select-or-extend-lines<ret>'
 
 # add line numbers
 hook global KakBegin .* %{addhl global/ number-lines -relative}

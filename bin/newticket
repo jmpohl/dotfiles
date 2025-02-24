@@ -1,0 +1,17 @@
+#!/bin/zsh
+
+[[ $# < 3 ]] && echo "need at least 3 args" && return 1
+
+
+repo=$1
+sprint=$2
+ticket=$3
+
+ticket_path="$HOME/src/$repo/$sprint/$ticket"
+
+mkdir -p $ticket_path
+cd $ticket_path
+
+wenv new -i $repo/template $repo/$sprint/$ticket
+wenv start $repo/$sprint/$ticket
+cd -

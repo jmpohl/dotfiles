@@ -1,0 +1,21 @@
+#!/bin/zsh
+
+chrome_kg() {
+    brave --profile-directory="Profile 2" $@
+}
+
+chrome_swa() {
+    brave --profile-directory="Profile 3" $@
+}
+
+chrome_me() {
+    brave --profile-directory="Profile 4" $@
+}
+
+chrome_command="$1" && shift
+case "$chrome_command" in
+    k|kg)  chrome_kg  $@ ;;
+    s|swa) chrome_swa $@ ;;
+    m|me)  chrome_me $@ ;;
+    *)     echo "Unrecognized command: '$chrome_command'" ;;
+esac

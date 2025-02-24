@@ -1,15 +1,87 @@
-# General ENV
-export EDITOR="kak"
-export SRC="$HOME/src"
-export XDG_CONFIG_HOME="$HOME/.config"
+# Source Prezto.
+if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
+  source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+fi
+source "$HOME/.zprofile"
 
-# `ls` colors
-export LS_COLORS=$LS_COLORS:'di=1;96:'
+## ALIASES
+alias open='xdg-open'
+alias wifi='net w'
+alias kak="kak_session"
+alias kc="kak -clear"
+alias sukak="sudo -E kak"
 
-# source wenv file
-source $SRC/wenv/wenv
-# enable bash completion functions
-autoload bashcompinit
-bashcompinit
-# source wenv completion file
-source $SRC/wenv/completion.bash 2>/dev/null
+## WENVS
+wenv_prompt() {
+	[[ -n "$WENV" ]] && echo "($WENV) "
+}
+
+setopt prompt_subst
+PS1="\$(wenv_prompt)$PS1"
+setopt HIST_IGNORE_SPACE
+
+# wenvs tmux integration
+[[ -n "$WENV" ]] && wenv_exec -c "$WENV"
+
+## FUNCTIONS
+chpwd() {
+    emulate -L zsh
+    ls
+}
+
+# sk + ag to interactively search files
+skag() {
+    export AG_PREFIX='ag --color --hidden --ignore node_modules --ignore .git --ignore env'
+    fzf --ansi --query="$@" --delimiter : --bind "enter:execute(kak_session {1})"
+}
+
+
+# open skag() result in kak
+skak() {
+    export AG_PREFIX='ag --color --hidden --ignore node_modules --ignore .git --ignore env'
+    if [[ -n "$@" ]]; then
+        fzf --ansi --disabled \
+            --delimiter : \
+            --query $@ \
+            --bind "start:reload:$AG_PREFIX {q} || true" \
+            --bind "change:reload:$AG_PREFIX {q} || true" \
+            --bind "enter:execute($EDITOR {1} +{2})+reload:$AG_PREFIX {q} || true"
+    else
+        fzf --ansi --disabled \
+            --delimiter : \
+            --bind "start:reload:$AG_PREFIX {q} || true" \
+            --bind "change:reload:$AG_PREFIX {q} || true" \
+            --bind "enter:execute($EDITOR {1} +{2})+reload:$AG_PREFIX {q} || true"
+    fi
+}
+
+skaf() {
+    fzf --ansi --delimiter : --bind "enter:execute(kak_session {1})"
+}
+
+lfcd() {
+    tmp="$(mktemp)"
+    lfub -last-dir-path="$tmp" "$@"
+    if [ -f "$tmp" ]; then
+        dir="$(cat "$tmp")"
+        rm -f "$tmp"
+        if [ -d "$dir" ]; then
+            if [ "$dir" != "$(pwd)" ]; then
+                cd "$dir"
+            fi
+        fi
+    fi
+}
+alias lf='lfcd'
+
+kwd() {
+    kak <<< $(pwd)
+}
+
+kd() {
+    kak <<< $(ls)
+}
+
+krp() {
+    kak <<< $(realpath $1)
+}

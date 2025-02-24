@@ -1,7 +1,4 @@
 #!/bin/bash
 
 screen two
-bluetooth_default
-pkill sxhkd
-sxhkd &
-mpd-mpris &
+#mpd-mpris &
