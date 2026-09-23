@@ -224,6 +224,21 @@ secrets like these should be set outside this repo (a shell profile fragment
 sourced conditionally, a password manager, sops-nix if paired with a NixOS
 host, etc.), not committed to a shared dotfiles repo.
 
+## Machine/employer-specific overrides: `~/.zprofile.local`, `~/.zshrc.local`
+
+`zsh/zprofile` and `zsh/zshrc` both source `~/.zprofile.local` /
+`~/.zshrc.local` if present, as their very last line. Neither file lives in
+this repo or is created by it — they're plain, untracked files you create by
+hand on any machine that needs something this repo shouldn't carry (an
+internal `NIX_PATH`/`GOPATH` override, a company dev-tool version manager, a
+hardcoded local library path, etc.). Same idea as `~/.ssh/config.d/*` for
+ssh config.
+
+`.zprofile.local` is sourced early (end of `zprofile`, before `zshrc` loads),
+so env vars set there are available everywhere; `.zshrc.local` is sourced
+last (end of `zshrc`), so it can override any alias/function defined above
+it.
+
 ## XDG variables
 
 `zsh/zprofile` sets `XDG_CONFIG_HOME=$HOME/.config` and

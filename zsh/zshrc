@@ -22,6 +22,8 @@ alias skif="EDITOR=nvim skaf"
 ## WENV
 source $SRC/wenv/wenv
 fpath=($XDG_DATA_HOME/zsh/completions $fpath)
+# Homebrew's own zsh completions, only present on a Mac with Homebrew installed
+[[ -d /opt/homebrew/share/zsh/site-functions ]] && fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
 
 wenv_prompt() {
 	[[ -n "$WENV" ]] && echo "($WENV) "
@@ -116,3 +118,17 @@ kd() {
 krp() {
     kak <<< $(realpath $1)
 }
+
+# restarts the Nix daemon's launchd service — macOS/nix-darwin only, harmless
+# no-op call elsewhere since it's just a shell function, never invoked unless
+# you type it
+restart_nix_daemon() {
+    sudo launchctl stop org.nixos.nix-daemon; sleep 1; sudo launchctl start org.nixos.nix-daemon
+}
+
+# Machine/employer-specific aliases, functions, and env that don't belong in
+# a shared, public repo (e.g. an internal dev-tool version manager, a
+# hardcoded local library path) go in ~/.zshrc.local instead. Not tracked by
+# this repo (see .gitignore) — create it by hand per machine. Sourced last
+# so it can override anything above.
+[[ -r "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"

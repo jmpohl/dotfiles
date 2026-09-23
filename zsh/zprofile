@@ -45,3 +45,10 @@ if command -v pyenv >/dev/null 2>&1 || [[ -d "$HOME/.pyenv" ]]; then
 fi
 
 export JIRA_API_TOKEN="6320OXnw6QnuL30IAofI858E"
+
+# Machine/employer-specific env vars that don't belong in a shared, public
+# repo (e.g. an internal NIX_PATH override, a company GOPATH/dx-tool setup)
+# go in ~/.zprofile.local instead. Not tracked by this repo (see .gitignore)
+# — create it by hand per machine. Sourced last so it can override anything
+# above.
+[[ -r "$HOME/.zprofile.local" ]] && source "$HOME/.zprofile.local"
