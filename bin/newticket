@@ -1,17 +1,91 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 
-[[ $# < 3 ]] && echo "need at least 3 args" && return 1
+usage="\
+USAGE
+  newticket [-b <branch>] [-r <root>] [-h] <ticket> <repo> [<repo> ...] - Create a directory for <ticket> holding a git worktree of each <repo>, plus a wenv to work in it.
 
+OPTIONS
+  -b <branch>  Branch to check out in each worktree, created if it doesn't exist. Default: jp/<ticket>, lowercased.
+  -r <root>    Directory to create <ticket> under. Default: \$TICKET_ROOT, or ~/tickets.
+  -h           Display this help message.
+"
 
-repo=$1
-sprint=$2
-ticket=$3
+branch=''
+ticket_root="${TICKET_ROOT:-$HOME/tickets}"
 
-ticket_path="$HOME/src/$repo/$sprint/$ticket"
+while getopts ":b:r:h" opt; do
+    case $opt in
+        b)
+            branch="$OPTARG"
+        ;;
+        r)
+            ticket_root="$OPTARG"
+        ;;
+        h)
+            echo "$usage"
+            exit 0
+        ;;
+        :)
+            echo "unknown option: -$OPTARG requires an argument" >&2
+            exit 1
+        ;;
+        \?)
+            echo "unknown option: -$OPTARG" >&2
+            exit 1
+        ;;
+    esac
+done
+shift $((OPTIND-1))
 
-mkdir -p $ticket_path
-cd $ticket_path
+(($# < 2)) && { echo "$usage" >&2 ; exit 1 }
 
-wenv new -i $repo/template $repo/$sprint/$ticket
-wenv start $repo/$sprint/$ticket
-cd -
+ticket=$1
+shift
+repos=("$@")
+
+: ${branch:="jp/${ticket:l}"}
+
+repo_root="${REPO_ROOT:-${SRC:-$HOME/src}/anduril}"
+wenv_cfg="${WENV_CFG:-${XDG_CONFIG_HOME:-$HOME/.config}/wenv}"
+template="$wenv_cfg/wenvs/anduril/tickets/template"
+ticket_dir="$ticket_root/$ticket"
+wenv_name="anduril/tickets/$ticket"
+wenv_path="$wenv_cfg/wenvs/$wenv_name"
+
+if [[ ! -f "$template" ]]; then
+    echo "template '$template' not found" >&2
+    exit 1
+fi
+
+for repo in $repos; do
+    if [[ ! -d "$repo_root/$repo/.git" ]]; then
+        echo "'$repo_root/$repo' is not a git repository" >&2
+        exit 1
+    fi
+    if [[ -e "$ticket_dir/$repo" ]]; then
+        echo "'$ticket_dir/$repo' already exists" >&2
+        exit 1
+    fi
+done
+
+if [[ -e "$wenv_path" ]]; then
+    echo "wenv '$wenv_name' already exists" >&2
+    exit 1
+fi
+
+mkdir -p "$ticket_dir" || exit 1
+
+for repo in $repos; do
+    if git -C "$repo_root/$repo" show-ref --verify --quiet "refs/heads/$branch"; then
+        git -C "$repo_root/$repo" worktree add "$ticket_dir/$repo" "$branch" || exit 1
+    else
+        git -C "$repo_root/$repo" worktree add -b "$branch" "$ticket_dir/$repo" || exit 1
+    fi
+done
+
+mkdir -p "$(dirname "$wenv_path")" || exit 1
+
+perl -pe "s|^wenv_dir=.*|wenv_dir=\"$ticket_dir\"|" "$template" > "$wenv_path" || exit 1
+
+echo "created $ticket_dir on branch '$branch' with: $repos"
+echo "enter with: wenv start $wenv_name"

@@ -1,0 +1,14 @@
+# Employer/host-specific entries (e.g. linux-tower's Anduril *.dgi/*.lonestar
+# latticectl proxy routes) are intentionally NOT included here — this file is
+# shared across machines. Put those in a local, not-checked-in file instead,
+# e.g. ~/.ssh/config.d/work, and pull it in via the Include below. ssh only
+# applies the FIRST matching value per host/option, so Include must come
+# before any conflicting Host blocks in this file to take precedence.
+Include ~/.ssh/config.d/*
+
+# Ported from BLADE's ~/.ssh/config. Foundation-Internal points at a private
+# LAN address (192.168.0.202) specific to that home network — harmless to
+# keep here (it simply won't resolve/connect elsewhere), but only actually
+# useful on that network. Add other Host entries below as needed.
+Host Foundation-Internal
+    HostName 192.168.0.202

@@ -1,0 +1,5 @@
+os:
+  copyToClipboardCmd: 'tmux set-buffer {{text}}'
+  editPreset: 'kak_session'
+  edit: 'kak_session {{filename}}'
+  editAtLine: 'kak_session +{{line}} {{filename}}'

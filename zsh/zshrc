@@ -4,24 +4,43 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
 fi
 source "$HOME/.zprofile"
 
+# Force 256-color support when connected via Mosh
+if [[ "$TERM" == "xterm" ]]; then
+    export TERM="xterm-256color"
+fi
+
 ## ALIASES
 alias open='xdg-open'
 alias wifi='net w'
 alias kak="kak_session"
 alias kc="kak -clear"
 alias sukak="sudo -E kak"
+alias vim="nvim"
+alias skim="EDITOR=nvim skak"
+alias skif="EDITOR=nvim skaf"
 
-## WENVS
+## WENV
+source $SRC/wenv/wenv
+fpath=($XDG_DATA_HOME/zsh/completions $fpath)
+
 wenv_prompt() {
 	[[ -n "$WENV" ]] && echo "($WENV) "
 }
-
 setopt prompt_subst
 PS1="\$(wenv_prompt)$PS1"
 setopt HIST_IGNORE_SPACE
+setopt CLOBBER
 
-# wenvs tmux integration
-[[ -n "$WENV" ]] && wenv_exec -c "$WENV"
+# Makes it so that the wenv associated with a given tmux session is loaded
+# automatically in new panes/windows within that session (see wenv's README,
+# "tmux integration" step — uses the current `wenv_source -c`, since the
+# older `wenv_exec -c` this used to call is now deprecated upstream).
+[[ -n "$WENV" ]] && wenv_source -c "$WENV"
+
+autoload compinit
+compinit
+autoload bashcompinit
+bashcompinit
 
 ## FUNCTIONS
 chpwd() {
@@ -29,39 +48,51 @@ chpwd() {
     ls
 }
 
-# sk + ag to interactively search files
+# fzf + ag (silver-searcher-ng) to interactively search files
 skag() {
     export AG_PREFIX='ag --color --hidden --ignore node_modules --ignore .git --ignore env'
     fzf --ansi --query="$@" --delimiter : --bind "enter:execute(kak_session {1})"
 }
 
-
-# open skag() result in kak
+# open skag() result in $EDITOR (kak_session by default; `skim` aliases this
+# with EDITOR=nvim — see ALIASES above)
 skak() {
-    export AG_PREFIX='ag --color --hidden --ignore node_modules --ignore .git --ignore env'
+    export AG_PREFIX='ag --color --hidden --ignore node_modules --ignore .git --ignore env --ignore target'
     if [[ -n "$@" ]]; then
         fzf --ansi --disabled \
             --delimiter : \
             --query $@ \
-            --bind "start:reload:$AG_PREFIX {q} || true" \
-            --bind "change:reload:$AG_PREFIX {q} || true" \
+            --bind "start:reload:$AG_PREFIX {q} | sort || true" \
+            --bind "change:reload:$AG_PREFIX {q} | sort || true" \
             --bind "enter:execute($EDITOR {1} +{2})+reload:$AG_PREFIX {q} || true"
     else
         fzf --ansi --disabled \
             --delimiter : \
-            --bind "start:reload:$AG_PREFIX {q} || true" \
-            --bind "change:reload:$AG_PREFIX {q} || true" \
+            --bind "start:reload:$AG_PREFIX {q} | sort || true" \
+            --bind "change:reload:$AG_PREFIX {q} | sort || true" \
             --bind "enter:execute($EDITOR {1} +{2})+reload:$AG_PREFIX {q} || true"
     fi
 }
 
 skaf() {
-    fzf --ansi --delimiter : --bind "enter:execute(kak_session {1})"
+    fzf --ansi --delimiter : --bind "enter:execute($EDITOR {1})"
 }
 
+# copy the fzf-selected file's realpath into the tmux paste buffer
+skap() {
+    realpath $(fzf) | tmux load-buffer -
+}
+
+# requires `lfub` (ueberzug preview wrapper) on X11/Linux machines with
+# ueberzug installed; falls back to plain `lf` elsewhere since lfub won't
+# exist on those machines — see bin/lfub
 lfcd() {
     tmp="$(mktemp)"
-    lfub -last-dir-path="$tmp" "$@"
+    if command -v lfub >/dev/null 2>&1; then
+        lfub -last-dir-path="$tmp" "$@"
+    else
+        lf -last-dir-path="$tmp" "$@"
+    fi
     if [ -f "$tmp" ]; then
         dir="$(cat "$tmp")"
         rm -f "$tmp"

@@ -15,6 +15,13 @@ export SRC=$HOME/src
 export TERM=xterm-256color
 export BROWSER=google-chrome-stable
 export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_DATA_HOME="$HOME/.local"
+
+# global npm installs (currently just the pi coding agent CLI — see the
+# fallback install-configs.sh / Nix home.nix activation script) go to a
+# user-local prefix, not the Nix store, since npm packages aren't Nix-managed
+export NPM_CONFIG_PREFIX="$HOME/.local/npm-global"
+export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
 
 # skak/skaf fzf/ag config
 export FZF_DEFAULT_OPTS='
@@ -27,20 +34,14 @@ export FZF_DEFAULT_COMMAND="find . -type f ! -path '*/\.git/*' ! -path '*/\node_
 # Python, don't create __pycache__
 export PYTHONDONTWRITEBYTECODE=1
 
-# source wenv file
-source $SRC/wenv/wenv
-# enable bash completion functions
-autoload bashcompinit
-bashcompinit
-# source wenv completion file
-source $SRC/wenv/completion.bash 2>/dev/null
-
 # `ls` colors
 export LS_COLORS=$LS_COLORS:'di=1;96:'
 
-# pyenv
-export PYENV_ROOT="$HOME/.pyenv"
-command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+# pyenv (only if installed)
+if command -v pyenv >/dev/null 2>&1 || [[ -d "$HOME/.pyenv" ]]; then
+    export PYENV_ROOT="$HOME/.pyenv"
+    command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init -)"
+fi
 
 export JIRA_API_TOKEN="6320OXnw6QnuL30IAofI858E"

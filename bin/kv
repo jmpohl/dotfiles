@@ -1,0 +1,261 @@
+#!/usr/bin/env zsh
+
+usage="\
+USAGE
+  kv [-e <editor>] [-h] [+<line>[:<col>]] [<file> ...]
+
+OPTIONS
+  -e <editor>   Start in this editor, either 'kak' or 'nvim'. Default: kak.
+  -h            Display this help message.
+
+DESCRIPTION
+  Edit files in kakoune and neovim, swapping between them with <F8>. The swap
+  lands on the same cursor position and the same screen row, saving the buffer
+  on the way out and reloading it on the way in.
+
+  Both editors run as one server per wenv (\$WENV with slashes turned into
+  dashes, or HOME when it is unset) and this attaches a UI to them, so undo
+  history, registers and LSP state survive a swap. Both servers outlive the
+  terminal, so the next kv in the same wenv is instant.
+
+  Kakoune's daemon is the same one kak_session uses, and this accepts the same
+  arguments, so it can be used in its place. As in kakoune, passing several
+  <file> arguments makes the last one current, and that is the one <F8> hands
+  over. With no <file> at all, attaches to the wenv's kakoune session as it was
+  left.
+
+  Several UIs on one neovim server all mirror the same screen, unlike kakoune
+  clients which get their own window. So while another terminal holds this
+  wenv's neovim, kv gives this terminal a private server instead, and says so.
+
+FILES
+  ~/.config/kv/swap.kak   kakoune side of the swap, sourced on every attach
+  ~/.config/kv/swap.lua   neovim side of the swap, sourced on every attach
+"
+
+lib="$HOME/.config/kv"
+run="${XDG_RUNTIME_DIR:-/tmp}"
+handoff="$run/kv-$$.handoff"
+
+# kakoune session names cannot contain a slash, and this has to match the name
+# kak_session derives so that both attach to the same daemon
+if [[ -n "$WENV" ]]; then
+    sess="${WENV//\//-}"
+else
+    sess=HOME
+fi
+
+nvim_shared="$run/kv-nvim-$sess"
+nvim_priv="$run/kv-nvim-$sess-$$"
+nvim_sock="$nvim_shared"
+
+# nvim does terminal setup for an rpc call whenever any of its streams is a tty,
+# which writes escape sequences into stdout and waits out a 1 second terminal
+# response timeout, so no rpc call here gets one
+nvim_eval() {
+    nvim --server "$1" --remote-expr "$2" </dev/null 2>/dev/null
+}
+
+# same call, but reporting nvim's error instead of the expression's value
+nvim_eval_err() {
+    nvim --server "$1" --remote-expr "$2" </dev/null 2>&1 >/dev/null
+}
+
+nvim_up() {
+    [[ -n "$(nvim_eval "$1" 1)" ]]
+}
+
+kak_daemon_up() {
+    kak -l 2>/dev/null | grep -qx "$1"
+}
+
+# kakoune-lsp keeps a session directory with a pid file in it, and it can outlive
+# a kakoune server whose client died abruptly. it then refuses to serve a new
+# session of the same name, and lsp fails with an error only in the *debug* buffer
+clear_stale_lsp() {
+    local dir="$run/kakoune-lsp/$1"
+    [[ -n "$1" && -d "$dir" ]] || return 0
+    local pid="${$(<$dir/pid 2>/dev/null)//[^0-9]/}"
+    if [[ -n "$pid" ]] && grep -qa kak-lsp /proc/$pid/cmdline 2>/dev/null; then
+        kill "$pid" 2>/dev/null
+    fi
+    rm -rf "$dir" "$dir.ref"
+}
+
+start_kak_daemon() {
+    kak_daemon_up "$1" && return 0
+    # a killed kakoune server leaves its socket behind, and kakoune then refuses
+    # to bind that name again
+    rm -f "$run/kakoune/$1"
+    clear_stale_lsp "$1"
+    kak -d -s "$1" &
+    local i
+    for i in {1..50}; do
+        kak_daemon_up "$1" && return 0
+        sleep 0.1
+    done
+    echo "kv: kakoune daemon '$1' did not start" >&2
+    return 1
+}
+
+# escape a path for a single quoted kakoune string or vimscript string
+quote() {
+    print -r -- "${1//\'/\'\'}"
+}
+
+pick_nvim_socket() {
+    local uis="$(nvim_eval "$nvim_shared" 'len(nvim_list_uis())')"
+    if [[ -n "$uis" && "$uis" != 0 ]]; then
+        nvim_sock="$nvim_priv"
+    else
+        nvim_sock="$nvim_shared"
+    fi
+}
+
+run_kak() {
+    start_kak_daemon "$sess" || return 1
+    local commands="source $lib/swap.kak"
+    [[ -n "$file" ]] && commands+="; kv-open '$(quote "$file")' $line $col $top"
+    kak -c "$sess" -e "$commands" $files
+    return 0
+}
+
+run_nvim() {
+    pick_nvim_socket
+    local enter="v:lua.KvEnter('$(quote "$file")', $line, $col, $top, '$(quote "$handoff")')"
+    if nvim_up "$nvim_sock"; then
+        local err
+        # a warm server still runs the lua it started with, so re-source it
+        err="$(nvim_eval_err "$nvim_sock" "execute('luafile $lib/swap.lua')")"
+        [[ -n "$err" ]] && echo "kv: $err" >&2
+        err="$(nvim_eval_err "$nvim_sock" "$enter")"
+        [[ -n "$err" ]] && echo "kv: $err" >&2
+        nvim --server "$nvim_sock" --remote-ui
+    else
+        local note=()
+        [[ "$nvim_sock" == "$nvim_priv" ]] && note=(-c \
+            "lua vim.schedule(function() vim.notify('kv: private nvim, $sess is in use') end)")
+        nvim --listen "$nvim_sock" -c "luafile $lib/swap.lua" \
+            -c "call $enter" $note $files
+    fi
+    return 0
+}
+
+read_handoff() {
+    local next_editor next_line next_col next_top next_file n
+    { read -r next_editor
+      read -r next_line
+      read -r next_col
+      read -r next_top
+      read -r next_file } < "$handoff"
+
+    [[ "$next_editor" == (kak|nvim) && -n "$next_file" ]] || {
+        echo "kv: ignoring malformed handoff from the editor" >&2 ; return 1
+    }
+    for n in "$next_line" "$next_col" "$next_top"; do
+        [[ "$n" == <-> ]] || {
+            echo "kv: ignoring handoff with a bad position" >&2 ; return 1
+        }
+    done
+
+    editor="$next_editor"
+    line="$next_line"
+    col="$next_col"
+    top="$next_top"
+    file="$next_file"
+    files=("$file")
+}
+
+cleanup() {
+    rm -f "$handoff"
+    # the wenv's server is left warm on purpose, like the kakoune daemon, but a
+    # private one exists only for this terminal
+    nvim_up "$nvim_priv" && nvim_eval "$nvim_priv" 'execute("qall")' >/dev/null
+}
+
+editor=kak
+
+# line, col and the first visible line of the window travel with the file. a top
+# of 0 means there is no view to restore yet, so the editor picks its own
+line=1
+col=1
+top=0
+
+# getopts treats a leading +3 as an unknown option and drops it, so take the
+# position arguments out first. that also lets them appear anywhere, as in kak
+rest=()
+for arg in "$@"; do
+    case "$arg" in
+        +<->:<->)
+            line="${${arg#+}%%:*}"
+            col="${arg##*:}"
+        ;;
+        +<->)
+            line="${arg#+}"
+        ;;
+        +*)
+            echo "kv: unrecognized position '$arg'" >&2
+            exit 1
+        ;;
+        *)
+            rest+=("$arg")
+        ;;
+    esac
+done
+set -- "${rest[@]}"
+
+while getopts ":e:h" opt; do
+    case "$opt" in
+        e)
+            editor="$OPTARG"
+        ;;
+        h)
+            echo "$usage"
+            exit 0
+        ;;
+        :)
+            echo "option -$OPTARG requires an argument" >&2
+            exit 1
+        ;;
+        \?)
+            echo "unknown option: -$OPTARG" >&2
+            exit 1
+        ;;
+    esac
+done
+shift $((OPTIND-1))
+
+[[ "$editor" == (kak|nvim) ]] || {
+    echo "kv: -e takes 'kak' or 'nvim', not '$editor'" >&2 ; exit 1
+}
+
+files=()
+for arg in "$@"; do
+    # kakoune reports resolved paths, so resolve here too and keep both editors
+    # agreeing on which file a symlink means
+    files+=("${arg:A}")
+done
+
+file="${files[-1]}"
+
+# the kakoune side reads this from the attaching client's environment. the neovim
+# side cannot, since a shared server would keep whichever terminal started it, so
+# it is passed to KvEnter instead
+export KV_HANDOFF="$handoff"
+
+trap cleanup EXIT INT TERM
+
+while true; do
+    rm -f "$handoff"
+    case "$editor" in
+        kak)
+            run_kak || exit 1
+        ;;
+        nvim)
+            run_nvim || exit 1
+        ;;
+    esac
+
+    [[ -f "$handoff" ]] || break
+    read_handoff || break
+done

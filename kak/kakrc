@@ -19,7 +19,7 @@ define-command select-or-extend-lines %{
 map global normal 'X' ': select-or-extend-lines<ret>'
 
 # add line numbers
-hook global KakBegin .* %{addhl global/ number-lines -relative}
+hook global KakBegin .* %{addhl global/ number-lines}
 
 # highlight characters in 81st column
 hook global BufCreate .*[.](md|tex) %{
@@ -34,13 +34,11 @@ hook global WinCreate .*[.](md|tex|rst) %{
 # add brackets highlighting
 hook global KakBegin .* %{addhl global/ show-matching}
 
-# X11 (copy/paste)
-# ===============
-map global user y 'y<a-|>xclip -i<ret>; :echo -color Information "copied selection to X11 clipboard"<ret>' -docstring 'copy to X clipboard'
-map global user p '!xclip -o <ret>' -docstring 'paste from X clipboard'
+# Tmux
+hook global RegisterModified '"' %{ nop %sh{ tmux set-buffer "$kak_main_reg_dquote" } }
 
 # colors
-colorscheme solarized2
+colorscheme moonfly
 
 # scroll offset
 set global scrolloff 12,0
@@ -100,65 +98,57 @@ hook global BufSetOption filetype=python %{
     map global user d 'ifrom pprint import pprint; import ipdb;ipdb.set_trace(context=30)<esc>' -docstring "debug print statement"
 }
 
+map global user f '| fmt -w 80<ret>' -docstring 'format selection at 80 columns'
+
 # Plugins
 # -------
 
 source "%val{config}/plugins/plug.kak/rc/plug.kak"
 plug "andreyorst/plug.kak" noload
-#plug "connect.kak"
-#plug "prelude.kak"
-#plug "kakoune-gtags"
-#require-module gtags
-#map global goto d "<space><a-i>w: gtags-definition <c-r>.<ret>" -docstring 'go to definition'
-#map global goto r "<space><a-i>w: gtags-references <c-r>.<ret>" -docstring 'go to references'
 
-
-plug "kak-lsp/kak-lsp" do %{
-    cargo build --release --locked
+plug "kakoune-lsp/kakoune-lsp" do %{
     cargo install --locked --force --path .
 } config %{
-    # uncomment to enable debugging
-    # eval %sh{echo ${kak_opt_lsp_cmd} >> /tmp/kak-lsp.log}
-    # set global lsp_cmd "kak-lsp -s %val{session} -vvv --log /tmp/kak-lsp.log"
+    set-option global lsp_auto_highlight_references false
+    set-option global lsp_auto_show_code_actions false
+    set-option global lsp_completion_trigger %{ fail }
+    set-option global modelinefmt "%opt{lsp_modeline} %opt{modelinefmt}"
 
-    # this is not necessary; the `lsp-enable-window` will take care of it
-    # eval %sh{${kak_opt_lsp_cmd} --kakoune -s $kak_session}
+    define-command -override -hidden lsp-handle-progress -params 6 %{
+        set-option global lsp_modeline_progress %sh{
+            if ! "$6"; then
+                printf '{Information}lsp: %s{Default} ' "$2"
+            fi
+        }
+    }
 
-    set global lsp_diagnostic_line_error_sign '║'
-    set global lsp_diagnostic_line_warning_sign '┊'
+    map global user l ': enter-user-mode lsp<ret>' -docstring 'lsp…'
+    map global goto d '<esc>: lsp-definition<ret>' -docstring 'definition'
+    map global goto r '<esc>: lsp-references<ret>' -docstring 'references'
 
-    define-command ne -docstring 'go to next error/warning from lsp' %{ lsp-find-error --include-warnings }
-    define-command pe -docstring 'go to previous error/warning from lsp' %{ lsp-find-error --previous --include-warnings }
-    define-command ee -docstring 'go to current error/warning from lsp' %{ lsp-find-error --include-warnings; lsp-find-error --previous --include-warnings }
+    remove-hooks global lsp-filetype-rust
+    hook -group lsp-filetype-rust global BufSetOption filetype=rust %{
+        set-option buffer lsp_servers %{
+            [rust-analyzer]
+            root_globs = ["Cargo.toml"]
+            single_instance = true
+            [rust-analyzer.settings.rust-analyzer]
+            checkOnSave = false
+            cachePriming.enable = false
+        }
+    }
 
-    define-command nm -docstring 'go to next match from lsp' %{ lsp-goto-next-match }
-    define-command pm -docstring 'go to previous match from lsp' %{ lsp-goto-previous-match }
-    define-command le -docstring 'lsp-enable' %{ lsp-enable-window }
-
-    map global goto n "<esc>:lsp-find-error --include-warnings<ret>:lsp-hover<ret>" -docstring 'go to next lsp error/warning'
-    map global goto N "<esc>:lsp-find-error<ret>:lsp-hover<ret>" -docstring 'go to next lsp error'
-    map global goto p "<esc>:lsp-find-error --previous --include-warnings<ret>:lsp-hover<ret>" -docstring 'go to previous lsp error/warning'
-    map global goto P "<esc>:lsp-find-error --previous<ret>:lsp-hover<ret>" -docstring 'go to previous lsp error'
-
-    # declare-user-mode lsp
-    declare-user-mode lsp-rename
-    map global lsp-rename e ':lsp-rename-prompt<ret>' -docstring 'edit'
-    map global lsp-rename r ':lsp-rename ' -docstring 'rename'
-    map global lsp r ':enter-user-mode lsp-rename<ret>' -docstring 'lsp-rename'
-    map global user l ':enter-user-mode lsp<ret>' -docstring 'lsp'
-
-    define-command lsp-restart -docstring 'restart lsp server' %{ lsp-stop; lsp-start }
-    hook global KakEnd .* lsp-exit
-}
-
-hook global WinSetOption filetype=(json|kotlin|python) %{
-    set-option window lsp_auto_highlight_references false
-    set-option window lsp_hover_anchor false
-    echo -debug "Enabling LSP for filtetype %opt{filetype}"
-    lsp-enable-window
-    #lsp-auto-hover-enable
-    lsp-inline-diagnostics-enable window
-    lsp-inlay-diagnostics-enable window
+    hook global WinSetOption filetype=(json|kotlin|python|rust) %{
+        set-option window lsp_hover_anchor false
+        echo -debug "Enabling LSP for filtetype %opt{filetype}"
+        try %{
+            lsp-enable-window
+            #lsp-auto-hover-enable
+            remove-hooks window lsp-breadcrumbs
+            lsp-inline-diagnostics-disable window
+            lsp-diagnostic-lines-disable window
+        }
+    }
 }
 
 plug 'delapouite/kakoune-cd' config %{
@@ -175,16 +165,11 @@ plug 'delapouite/kakoune-buffers' config %{
     # Suggested mappings
     map global user b ':enter-buffers-mode<ret>'              -docstring 'buffers…'
     map global user B ':enter-user-mode -lock buffers<ret>'   -docstring 'buffers (lock)…'
-  
+
     # Suggested aliases
     alias global bd delete-buffer
     alias global bf buffer-first
     alias global bl buffer-last
     alias global bo buffer-only
     alias global bo! buffer-only-force
-}
-
-plug "lePerdu/kakboard" %{
-    hook global WinCreate .* %{ kakboard-enable }
-    map global user K ':kakboard-toggle<ret>' -docstring "toggle clipboard integration"
 }
