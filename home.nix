@@ -72,7 +72,10 @@ in
   ########################################
   # tmux
   ########################################
-  home.file.".config/tmux/tmux.conf".source = ./tmux/tmux.conf;
+  # tmux checks ~/.tmux.conf before $XDG_CONFIG_HOME/tmux/tmux.conf, and the
+  # file's own `bind r source-file ~/.tmux.conf` reload binding assumes this
+  # path too — so this manages ~/.tmux.conf directly, not the XDG location.
+  home.file.".tmux.conf".source = ./tmux/tmux.conf;
 
   ########################################
   # kakoune + kakoune-lsp

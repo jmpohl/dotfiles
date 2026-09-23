@@ -239,6 +239,24 @@ so env vars set there are available everywhere; `.zshrc.local` is sourced
 last (end of `zshrc`), so it can override any alias/function defined above
 it.
 
+## Machine/employer-specific ssh config: `~/.ssh/config.d/`
+
+This repo's `ssh/config` starts with `Include ~/.ssh/config.d/*`, before its
+own `Host` entries — ssh applies the *first* matching value per host/option,
+so `Include` has to come first to let files in `config.d/` take precedence.
+Drop as many files as you want in `~/.ssh/config.d/` (any name — `work`,
+`personal`, whatever), each a normal ssh config fragment (`Host` blocks,
+`ProxyCommand`, etc.). None of them are tracked by this repo or touched by
+`home-manager switch` / `install-dotfiles.sh` — they're exactly the kind of
+per-machine, often-employer-specific content (VPN proxy routes, internal
+host aliases) that shouldn't live in a public dotfiles repo.
+
+If a machine already has host entries directly in `~/.ssh/config` from
+before adopting this repo, move them into `~/.ssh/config.d/<name>` first —
+otherwise `home-manager switch` (or `install-dotfiles.sh --force`) will
+overwrite `~/.ssh/config` with this repo's version and those entries would
+be lost.
+
 ## XDG variables
 
 `zsh/zprofile` sets `XDG_CONFIG_HOME=$HOME/.config` and
