@@ -6,7 +6,21 @@ else
     server_name="HOME"
 fi
 
-socket_file=$(kak -l | grep $server_name)
-[[ $socket_file == "" ]] && kak -d -s $server_name &
+# `kak -l` lists dead sessions too (as "name (dead)"), and a plain
+# `grep $server_name` matches that substring — so a session that died
+# without a clean shutdown (crash, killed daemon, machine sleep, etc.) looks
+# "found" here, no new daemon gets started, and the client below then hangs
+# briefly trying to connect to a socket nothing is listening on before
+# giving up silently. `kak -clear` prunes dead sessions first, and `grep -qx`
+# requires an exact match against the live name (not a `(dead)` line) to
+# actually treat it as running.
+kak -clear 2>/dev/null
+if ! kak -l 2>/dev/null | grep -qx "$server_name"; then
+    kak -d -s "$server_name" &
+    for _ in {1..50}; do
+        kak -l 2>/dev/null | grep -qx "$server_name" && break
+        sleep 0.1
+    done
+fi
 
 kak -c $server_name "$@"

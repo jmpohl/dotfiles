@@ -8,6 +8,26 @@ let
     fetchSubmodules = true;
     leaveDotGit = false;
   };
+
+  # Every repo-tracked config file below is linked via mkOutOfStoreSymlink
+  # instead of a plain `source = ./path` — home-manager's usual behavior
+  # copies the file into the Nix store and symlinks *there*, which makes it
+  # read-only (the symlink target is in /nix/store). mkOutOfStoreSymlink
+  # instead symlinks straight to the file's real, absolute path, so it stays
+  # editable in place — edit e.g. kak/kakrc directly and the change is live
+  # immediately, no `home-manager switch` needed. The tradeoff: Nix no
+  # longer guarantees the live file matches the last committed state, since
+  # you can edit and forget to commit.
+  #
+  # NOTE: `local` takes a *string* like "kak/kakrc", not a Nix path
+  # (./kak/kakrc) — a `./`-relative path gets resolved against this flake's
+  # immutable store copy of the repo (flakes always copy their source into
+  # the store, even for local git checkouts), which would silently point
+  # `mkOutOfStoreSymlink` at another read-only copy and defeat the whole
+  # point. Hardcoding against $HOME/src/dotfiles (this repo's location on
+  # every machine it's used from) keeps it pointed at the real, live
+  # checkout on disk instead.
+  local = relPath: config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/src/dotfiles/${relPath}";
 in
 {
   home.username = "jpohl";
@@ -53,15 +73,17 @@ in
   #
   # These paths point directly at this repo's real files (zsh/, kak/,
   # tmux/, etc.) — the same files install-dotfiles.sh copies for a no-Nix
-  # setup. There is no separate files/ mirror to keep in sync.
+  # setup. There is no separate files/ mirror to keep in sync. They're
+  # linked via `local` (mkOutOfStoreSymlink, defined above) so the live
+  # files stay editable in place.
 
   home.file.".zprezto".source = zprezto;
   home.file.".zshenv".source = "${zprezto}/runcoms/zshenv";
   home.file.".zlogin".source = "${zprezto}/runcoms/zlogin";
   home.file.".zlogout".source = "${zprezto}/runcoms/zlogout";
-  home.file.".zprofile".source = ./zsh/zprofile;
-  home.file.".zshrc".source = ./zsh/zshrc;
-  home.file.".zpreztorc".source = ./zsh/zprezto/zpreztorc;
+  home.file.".zprofile".source = local "zsh/zprofile";
+  home.file.".zshrc".source = local "zsh/zshrc";
+  home.file.".zpreztorc".source = local "zsh/zprezto/zpreztorc";
 
   # wenv completions (see wenv README step 4: symlink _wenv into fpath) —
   # zshrc's `fpath=($XDG_DATA_HOME/zsh/completions $fpath)` expects this.
@@ -75,12 +97,12 @@ in
   # tmux checks ~/.tmux.conf before $XDG_CONFIG_HOME/tmux/tmux.conf, and the
   # file's own `bind r source-file ~/.tmux.conf` reload binding assumes this
   # path too — so this manages ~/.tmux.conf directly, not the XDG location.
-  home.file.".tmux.conf".source = ./tmux/tmux.conf;
+  home.file.".tmux.conf".source = local "tmux/tmux.conf";
 
   ########################################
   # kakoune + kakoune-lsp
   ########################################
-  home.file.".config/kak/kakrc".source = ./kak/kakrc;
+  home.file.".config/kak/kakrc".source = local "kak/kakrc";
   # kakrc's kakoune-lsp plug block configures LSP entirely inline
   # (lsp_servers, per-filetype hooks) — no kak-lsp.toml needed. kakrc also
   # sources "%val{config}/plugins/plug.kak/rc/plug.kak" — plug.kak
@@ -106,14 +128,14 @@ in
   ########################################
   # ssh (client config only — keys are not part of this profile)
   ########################################
-  home.file.".ssh/config".source = ./ssh/config;
+  home.file.".ssh/config".source = local "ssh/config";
 
   ########################################
   # neovim (kickstart.nvim-derived, lazy.nvim + LSP/DAP/Rust)
   ########################################
-  home.file.".config/nvim/init.lua".source = ./nvim/init.lua;
-  home.file.".config/nvim/lazy-lock.json".source = ./nvim/lazy-lock.json;
-  home.file.".config/nvim/.stylua.toml".source = ./nvim/.stylua.toml;
+  home.file.".config/nvim/init.lua".source = local "nvim/init.lua";
+  home.file.".config/nvim/lazy-lock.json".source = local "nvim/lazy-lock.json";
+  home.file.".config/nvim/.stylua.toml".source = local "nvim/.stylua.toml";
   # NOTE: the rust-debugging config hardcodes
   # `/usr/lib/llvm-15/bin/lldb-vscode` as a DAP adapter path — that's specific
   # to a particular Ubuntu install. It's an unused fallback (codelldb is the
@@ -125,24 +147,32 @@ in
   ########################################
   # lf
   ########################################
-  home.file.".config/lf/lfrc".source = ./lf/lfrc;
+  home.file.".config/lf/lfrc".source = local "lf/lfrc";
 
   ########################################
   # lazygit
   ########################################
-  home.file.".config/lazygit/config.yml".source = ./lazygit/config.yml;
+  home.file.".config/lazygit/config.yml".source = local "lazygit/config.yml";
 
   ########################################
   # ~/bin — editor wrapper scripts, portable/POSIX-only
   ########################################
-  home.file."bin/kak_session" = { source = ./bin/kak_session; executable = true; };
+  # NOTE: no `executable = true` here — with mkOutOfStoreSymlink, setting it
+  # explicitly makes home-manager try to stat/cp the out-of-store target
+  # during the sandboxed build (to verify/fix the executable bit), which
+  # fails with "Permission denied"/"Operation not permitted" since the
+  # sandbox can't read outside the Nix store. Leaving it unset (default:
+  # inherit from source) just does a plain `ln -s`, which works fine — and
+  # since these repo files already have +x set on disk, the symlink reports
+  # as executable exactly like the file it points to.
+  home.file."bin/kak_session".source = local "bin/kak_session";
   # kv swaps between kakoune and neovim on the same file/cursor position via
   # <F8>, sharing one daemon per wenv with kak_session. Depends on
   # ~/.config/kv/swap.kak + swap.lua below, both sourced by kv itself.
-  home.file."bin/kv" = { source = ./bin/kv; executable = true; };
-  home.file.".config/kv/swap.kak".source = ./kv/swap.kak;
-  home.file.".config/kv/swap.lua".source = ./kv/swap.lua;
-  home.file."bin/newticket" = { source = ./bin/newticket; executable = true; };
+  home.file."bin/kv".source = local "bin/kv";
+  home.file.".config/kv/swap.kak".source = local "kv/swap.kak";
+  home.file.".config/kv/swap.lua".source = local "kv/swap.lua";
+  home.file."bin/newticket".source = local "bin/newticket";
 
   ########################################
   # wenv — personal work-environment switcher (github:dgrisham/wenv)
@@ -160,7 +190,7 @@ in
   # `wenvs/` holds your individual project definitions; this repo's real
   # wenv/wenvs/ directory (see ./wenv/wenvs) is used instead of a separate
   # Nix-only copy — add your own project wenv files there.
-  home.file.".config/wenv/wenvs".source = ./wenv/wenvs;
+  home.file.".config/wenv/wenvs".source = local "wenv/wenvs";
 
   ########################################
   # pi coding agent (github:earendil-works/pi)
