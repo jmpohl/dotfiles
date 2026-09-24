@@ -59,6 +59,7 @@ in
     rsync
     mosh
     claude-code
+    rust-analyzer # nvim's rustaceanvim plugin auto-detects this on $PATH — no mason/network fetch needed
   ];
 
   ########################################
@@ -136,13 +137,24 @@ in
   home.file.".config/nvim/init.lua".source = local "nvim/init.lua";
   home.file.".config/nvim/lazy-lock.json".source = local "nvim/lazy-lock.json";
   home.file.".config/nvim/.stylua.toml".source = local "nvim/.stylua.toml";
+  # rust-analyzer (home.packages above) and codelldb (below) are both on
+  # $PATH, so rustaceanvim's defaults (vim.fn.exepath('rust-analyzer') /
+  # exepath_or_binary('codelldb')) find them with no mason install and no
+  # network access — the only remaining first-launch network dependency is
+  # lazy.nvim's own plugin bootstrap (git clone + pulling everything pinned
+  # in lazy-lock.json).
+  #
+  # codelldb isn't a standalone nixpkgs package — it only ships bundled
+  # inside the vscode-lldb extension derivation, which has no top-level
+  # bin/, so home.packages alone wouldn't put it on $PATH. This symlinks
+  # just the binary out to ~/bin instead of adding the whole extension.
+  home.file."bin/codelldb".source =
+    "${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/adapter/codelldb";
   # NOTE: the rust-debugging config hardcodes
   # `/usr/lib/llvm-15/bin/lldb-vscode` as a DAP adapter path — that's specific
   # to a particular Ubuntu install. It's an unused fallback (codelldb is the
   # adapter actually wired to <F5>/RustLsp), but fix the path or remove the
   # `dap.adapters.lldb` block in nvim/init.lua if you rely on it.
-  # First launch needs network access: lazy.nvim self-bootstraps via git
-  # clone, then pulls every plugin pinned in lazy-lock.json.
 
   ########################################
   # lf

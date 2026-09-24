@@ -62,6 +62,37 @@ output so downstream flakes don't need to know this repo's internal layout.
 `dotfiles.inputs.wenv-src` so both configs stay pinned to the same wenv
 revision.
 
+### Using this on an offline machine
+
+`nix copy` moves an already-built closure over SSH/LAN, so a machine with no
+internet access (but on the same LAN as one that does) can still get the
+full profile with zero fetches from `cache.nixos.org`. Best done from a
+same-architecture, same-OS-family source machine — e.g. an Ubuntu box with
+Nix installed, copying to a NixOS box, both `x86_64-linux` — so nothing
+needs cross-compiling:
+
+```sh
+# On the machine WITH internet access:
+git clone https://github.com/<you>/dotfiles ~/src/dotfiles
+cd ~/src/dotfiles
+nix build .#homeConfigurations.x86_64-linux.activationPackage
+nix copy --to ssh://user@offline-host ./result
+rsync -av ~/src/dotfiles/ user@offline-host:~/src/dotfiles/   # nix copy only moves /nix/store paths, not this repo — the out-of-store symlinks in home.nix need the real checkout on disk
+
+# On the offline machine — run the already-built activation script directly,
+# NOT `home-manager switch --flake .`, which would re-evaluate the flake and
+# try to fetch nixpkgs/home-manager/wenv-src over the network:
+ssh user@offline-host
+/nix/store/.../activate   # path shown by `nix copy` / `readlink ./result`
+```
+
+The receiving machine's SSH user needs to be root or a Nix `trusted-users`
+account, or the daemon will reject the copied paths on signature
+verification. This is also how `rust-analyzer`/`codelldb` (see "neovim"
+below) end up usable with no network at all — they're plain Nix packages,
+so they travel with the rest of the closure.
+
+
 ## Option 2: plain copy script (no Nix)
 
 ```sh
@@ -122,7 +153,12 @@ git clone https://github.com/dgrisham/wenv ~/src/wenv
   mason/nvim-lspconfig, Telescope, blink.cmp completion, DAP debugging
   (Rust-focused via rustaceanvim/codelldb). First launch needs network
   access — lazy.nvim self-bootstraps via `git clone`, then installs every
-  plugin pinned in `lazy-lock.json`. One hardcoded path
+  plugin pinned in `lazy-lock.json`. Rust LSP and debugging are the
+  exception: `rust-analyzer` and `codelldb` (see below) are both installed
+  via Nix and put on `$PATH`, which rustaceanvim's defaults pick up
+  directly — no mason install, no network, works offline once the Nix
+  closure itself is on the machine (e.g. copied over via `nix copy` — see
+  "Using this on an offline machine" below). One hardcoded path
   (`/usr/lib/llvm-15/bin/lldb-vscode`, an unused fallback DAP adapter) is
   specific to a particular Ubuntu install; fix or remove it if you need that
   adapter.
