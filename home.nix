@@ -52,6 +52,7 @@ in
     ripgrep # telescope.nvim live_grep/grep_string backend
     fd # telescope.nvim find_files backend
     gnumake # builds telescope-fzf-native.nvim and LuaSnip's jsregexp on first launch
+    tree-sitter # nvim-treesitter's :TSInstall/:TSUpdate shell out to this CLI to compile parsers — without it on $PATH, parser installs fail silently and buffers get no syntax highlighting
     stylua
     nodejs_22 # required by the pi coding agent CLI (engines: node >=22.19.0), see activation script below
     ncdu

@@ -92,6 +92,32 @@ verification. This is also how `rust-analyzer`/`codelldb` (see "neovim"
 below) end up usable with no network at all — they're plain Nix packages,
 so they travel with the rest of the closure.
 
+**neovim's plugins are not part of the Nix closure and need a separate
+copy.** lazy.nvim's plugin clones, mason's installed tools
+(`lua-language-server`, `stylua`), and treesitter's per-language parsers all
+live under `~/.local/nvim` (this repo's `XDG_DATA_HOME`, see below) —
+plain `git clone`/downloads done by neovim itself on first launch, entirely
+outside `/nix/store`, so `nix copy` doesn't touch any of it. Bring that
+directory over the same way as the repo itself:
+
+```sh
+# On the machine WITH internet access, first make sure everything's
+# installed. lazy.nvim's plugins install on first launch of a plain `nvim`;
+# treesitter parsers install lazily per-filetype instead, so explicitly
+# :TSInstall whichever languages you care about (this repo's home.packages
+# already includes the `tree-sitter` CLI treesitter shells out to for the
+# compile step — without it, installs fail silently with no highlighting,
+# no error):
+nvim --headless "+TSInstall! lua rust" "+lua vim.defer_fn(function() vim.cmd('qa!') end, 30000)"
+
+# Then copy the whole directory over — ~90MB in practice, trivial over LAN:
+rsync -av ~/.local/nvim/ user@offline-host:~/.local/nvim/
+```
+
+Do this *before* first launching neovim on the offline machine — if
+`~/.local/nvim/lazy/lazy.nvim` doesn't exist yet, `init.lua`'s bootstrap
+tries to `git clone` it and fails offline.
+
 
 ## Option 2: plain copy script (no Nix)
 
