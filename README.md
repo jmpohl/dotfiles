@@ -100,8 +100,11 @@ git clone https://github.com/dgrisham/wenv ~/src/wenv
   tab-title watching, and `utility`'s ~60 aliases like `ll`/`la` are
   superseded by aliases already in `zshrc`). `zshrc` has `startx` on tty1,
   `wifi`/`open` aliases, `vim=nvim`, `skim`/`skif` (EDITOR=nvim variants),
-  `skap` (copy a fzf pick into the tmux buffer), and the wenv/skag/skak
-  integration.
+  `skap` (copy a fzf pick into the tmux buffer), the wenv/skag/skak
+  integration, and re-sources `zsh/zprezto/prompt_steeef_setup` right after
+  Prezto loads, to override Prezto's stock `steeef` theme with this repo's
+  customized one (`@`/`:` separators instead of `at`/`in`, no editor-mode
+  indicator in the prompt).
 - **tmux** — `tmux/tmux.conf`. Adds `focus-events`/`extended-keys` for
   nvim/tmux interop and a `choose-tree` session-sort binding. Reload is
   bound to `~/.tmux.conf` (this repo's actual convention — not

@@ -2,6 +2,14 @@
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
+
+# Override Prezto's stock `steeef` prompt with this repo's customized
+# version. Prepending our dir to $fpath doesn't work here — Prezto's own
+# module loader (in init.zsh above) prepends its stock functions/ dir to
+# $fpath too, after ours, so its version still wins the autoload. Instead,
+# source the override directly: it ends with `prompt_steeef_setup "$@"`, so
+# this redefines the function Prezto already autoloaded and re-applies it.
+[[ -r "$HOME/src/dotfiles/zsh/zprezto/prompt_steeef_setup" ]] && source "$HOME/src/dotfiles/zsh/zprezto/prompt_steeef_setup"
 source "$HOME/.zprofile"
 
 # Force 256-color support when connected via Mosh
