@@ -156,7 +156,7 @@ git clone https://github.com/dgrisham/wenv ~/src/wenv
   `utility` were dropped as unused (no bare-dirname `cd`/pushd habit, no
   tab-title watching, and `utility`'s ~60 aliases like `ll`/`la` are
   superseded by aliases already in `zshrc`). `zshrc` has `startx` on tty1,
-  `wifi`/`open` aliases, `vim=nvim`, `skim`/`skif` (EDITOR=nvim variants),
+  `wifi` alias, `vim=nvim`, `skim`/`skif` (EDITOR=nvim variants),
   `skap` (copy a fzf pick into the tmux buffer), the wenv/skag/skak
   integration, and re-sources `zsh/zprezto/prompt_steeef_setup` right after
   Prezto loads, to override Prezto's stock `steeef` theme with this repo's

@@ -18,7 +18,6 @@ if [[ "$TERM" == "xterm" ]]; then
 fi
 
 ## ALIASES
-alias open='xdg-open'
 alias wifi='net w'
 alias kak="kak_session"
 alias kc="kak -clear"
