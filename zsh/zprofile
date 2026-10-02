@@ -34,8 +34,21 @@ export FZF_DEFAULT_COMMAND="find . -type f ! -path '*/\.git/*' ! -path '*/\node_
 # Python, don't create __pycache__
 export PYTHONDONTWRITEBYTECODE=1
 
-# `ls` colors
-export LS_COLORS=$LS_COLORS:'di=1;96:'
+# `ls` colors — left unset here so Prezto's completion module
+# (modules/completion/init.zsh) applies its own default LS_COLORS
+# (di=34:ln=35:so=32:pi=33:ex=31:bd=36;01:cd=33;01:su=31;40;07:sg=36;40;07:
+# tw=32;40;07:ow=33;40;07:), covering symlinks/executables/etc, not just
+# directories. The line below used to override just `di=`, but setting
+# LS_COLORS at all here pre-empts Prezto's default entirely — it only
+# applies via `${LS_COLORS:-default}`, which only fires if LS_COLORS is
+# still unset by the time it runs, and zprofile runs before Prezto's init.
+# Net effect: everything except directories lost its color. If Prezto's
+# default dark-blue directories (di=34) are ever hard to read again,
+# uncomment this to override just that while keeping its other defaults —
+# assigned outright, not appended, since appending here is also
+# non-idempotent (zprofile gets re-sourced in every new shell/pane, so
+# `$LS_COLORS:'...'` just keeps growing the string each time):
+# export LS_COLORS='di=1;96:ln=35:so=32:pi=33:ex=31:bd=36;01:cd=33;01:su=31;40;07:sg=36;40;07:tw=32;40;07:ow=33;40;07:'
 
 # pyenv (only if installed)
 if command -v pyenv >/dev/null 2>&1 || [[ -d "$HOME/.pyenv" ]]; then
