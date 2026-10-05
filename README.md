@@ -197,8 +197,10 @@ way without needing to know which install method is in play.)
     terminal (`LESS_TERMCAP_*`/`stty -ixon` in `zprofile`).
 
   `zshrc` also has `startx` on tty1, `wifi` alias, `vim=nvim`, `skim`/`skif`
-  (EDITOR=nvim variants), `skap` (copy a fzf pick into the tmux buffer), and
-  the wenv/skag/skak integration.
+  (EDITOR=nvim variants), `skap` (copy a fzf pick into the tmux buffer), the
+  wenv/skag/skak integration, and fzf's own shell integration (`fzf --zsh`)
+  — Ctrl-R fuzzy history search, Ctrl-T fuzzy-paste a file path, Alt-C
+  fuzzy-cd, and a `**` fuzzy-completion trigger.
 - **tmux** — `tmux/tmux.conf`. Adds `focus-events`/`extended-keys` for
   nvim/tmux interop and a `choose-tree` session-sort binding. Reload is
   bound to `~/.tmux.conf` (this repo's actual convention — not

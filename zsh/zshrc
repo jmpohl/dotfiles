@@ -184,6 +184,23 @@ zstyle ':completion:*:*:kill:*' insert-ids single
 autoload bashcompinit
 bashcompinit
 
+########################################
+# fzf shell integration
+########################################
+# Ctrl-R: fuzzy-search command history (what was bound here before: nothing
+# — Ctrl-R was unbound). Also comes with Ctrl-T (fuzzy-paste a file path)
+# and Alt-C (fuzzy-cd into a directory) in vicmd/viins/emacs, plus a `**`
+# fuzzy-completion trigger, all for free in the same bundle.
+# `fzf --zsh` prints the equivalent of fzf's own key-bindings.zsh +
+# completion.zsh — works identically regardless of how fzf itself got
+# installed (Nix, Homebrew, apt, manual), unlike sourcing a path to those
+# files directly, which varies by install method/package manager.
+# stderr suppressed on the eval itself: fzf's own option-snapshot/restore
+# logic in this script prints a benign "can't change option: zle" on every
+# shell startup on this zsh/fzf version combo — cosmetic only, bindings
+# still work correctly (verified), just noisy otherwise.
+command -v fzf >/dev/null 2>&1 && eval "$(fzf --zsh)" 2>/dev/null
+
 ## WENV
 # Sourced after compinit above — wenv's own script calls `compdef` directly
 # at source time, which only exists once compinit has already run.
