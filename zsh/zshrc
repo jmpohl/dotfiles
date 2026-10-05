@@ -226,6 +226,12 @@ bindkey -M vicmd "j" history-substring-search-down
 
 source "$XDG_DATA_HOME/zsh-plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
+# Its default history-search strategy runs synchronously on every keystroke
+# — the glob-pattern match against the whole $history array gets more
+# expensive as the typed prefix grows, which is felt as typing lag that
+# gets worse the longer the word. Async mode (via zpty) moves that search
+# to a background process so typing itself never blocks on it.
+ZSH_AUTOSUGGEST_USE_ASYNC=1
 
 ## FUNCTIONS
 chpwd() {
