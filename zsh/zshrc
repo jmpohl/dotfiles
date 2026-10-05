@@ -18,6 +18,18 @@ if [[ "$TERM" == "xterm" ]]; then
 fi
 
 ## ALIASES
+# Both GNU coreutils' ls (Linux) and modern macOS's ls support `--color`
+# reading $LS_COLORS (set in zprofile) — but neither colorizes by default
+# without this flag. `=auto` (the usual choice, since it leaves piped/
+# redirected output plain) doesn't reliably detect a terminal on this
+# macOS ls build even when actually attached to one, so this uses `=always`
+# instead, confirmed to actually work — the tradeoff is that `ls` piped
+# into another command also carries color escape codes now (use `command
+# ls` or `\ls` to bypass this alias if that ever matters). The separate
+# BSD-style -G/CLICOLOR mechanism (which reads $LSCOLORS, a different
+# format) doesn't colorize at all on this machine, so it isn't a working
+# substitute either.
+alias ls='ls --color=always'
 alias wifi='net w'
 alias kak="kak_session"
 alias kc="kak -clear"
