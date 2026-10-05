@@ -1,5 +1,5 @@
 {
-  description = "Portable dotfiles — zsh/Zprezto, tmux, kakoune, neovim, git, wenv, pi, Claude Code";
+  description = "Portable dotfiles — zsh, tmux, kakoune, neovim, git, wenv, pi, Claude Code";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

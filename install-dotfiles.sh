@@ -2,8 +2,7 @@
 #
 # install-dotfiles.sh — copy this repo's configs into their expected home
 # locations, without Nix. A fallback for machines where you can't or don't
-# want to use the home-manager flake in ~/src/dotfiles.~1~ (or wherever the
-# Nix-based profile lives).
+# want to use this repo's home-manager flake (home.nix).
 #
 # Safe by default: NEVER overwrites a file/directory that already exists at
 # the destination. Run with --dry-run first to see what would happen, or
@@ -42,9 +41,8 @@ done
 # otherwise independent.
 # ---------------------------------------------------------------------------
 typeset -A dotfiles=(
-    ["zsh/zshrc"]="$HOME/.zprezto/runcoms/zshrc"
-    ["zsh/zprofile"]="$HOME/.zprezto/runcoms/zprofile"
-    ["zsh/zprezto/zpreztorc"]="$HOME/.zprezto/runcoms/zpreztorc"
+    ["zsh/zshrc"]="$HOME/.zshrc"
+    ["zsh/zprofile"]="$HOME/.zprofile"
     ["tmux/tmux.conf"]="$HOME/.tmux.conf"
     ["kak"]="$HOME/.config/kak"
     ["wenv"]="$HOME/.config/wenv"
@@ -140,3 +138,7 @@ fi
 echo
 echo "Done. Not handled by this script (copy manually if needed):"
 echo "  macos/ linux/ X11/ systemd/ julia/ jupyter/ vim/ bbmp/"
+echo
+echo "zshrc also expects 4 zsh plugins cloned under ~/.local/zsh-plugins/ —"
+echo "see the README's \"Option 2\" section for the exact clone commands"
+echo "(same idea as wenv's manual clone step)."

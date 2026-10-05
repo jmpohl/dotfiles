@@ -1,6 +1,6 @@
 # dotfiles
 
-Personal dotfiles — zsh + Zprezto, tmux, kakoune (+ kakoune-lsp), neovim, `kv`
+Personal dotfiles — zsh, tmux, kakoune (+ kakoune-lsp), neovim, `kv`
 (swap kakoune/neovim on the same file), lazygit, lf, git, ssh config, the
 [wenv](https://github.com/dgrisham/wenv) shell tool, the
 [pi](https://github.com/earendil-works/pi) coding agent, Claude Code, and a
@@ -10,7 +10,7 @@ Two ways to apply this repo to a machine — same files, your choice per
 machine:
 
 1. **Nix / home-manager** (`flake.nix` + `home.nix`) — declarative,
-   reproducible, tracks upstream pins (Zprezto, wenv) automatically.
+   reproducible, tracks upstream pins (wenv, zsh plugins) automatically.
 2. **Plain copy script** (`install-dotfiles.sh`) — no Nix required, just
    `cp`. Safe by default: never overwrites an existing file without asking.
 
@@ -145,23 +145,60 @@ git clone https://github.com/dgrisham/wenv ~/src/wenv
 
 (Nix does this for you automatically — see below.)
 
+`zshrc` also expects 4 zsh plugins at fixed paths under `~/.local/zsh-plugins/`
+(`$XDG_DATA_HOME`, see "XDG variables" below) — clone each upstream repo
+there directly:
+
+```sh
+mkdir -p ~/.local/zsh-plugins
+git clone --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting ~/.local/zsh-plugins/zsh-syntax-highlighting
+git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions ~/.local/zsh-plugins/zsh-autosuggestions
+git clone --depth 1 https://github.com/zsh-users/zsh-history-substring-search ~/.local/zsh-plugins/zsh-history-substring-search
+git clone --depth 1 https://github.com/zsh-users/zsh-completions ~/.local/zsh-plugins/zsh-completions
+```
+
+(Nix symlinks these from nixpkgs instead — see "zsh" under "What's included"
+below. The directory names and layout are chosen to match nixpkgs'
+packaging of each exactly, so `zshrc` sources the same relative paths either
+way without needing to know which install method is in play.)
+
 ## What's included
 
-- **zsh + [Zprezto](https://github.com/sorin-ionescu/prezto)** —
-  `zsh/zprofile`, `zsh/zshrc`, `zsh/zprezto/zpreztorc` are the three runcoms
-  that are actually customized; `zshenv`/`zlogin`/`zlogout` are stock
-  Zprezto (under Nix, symlinked straight from the fetched `zprezto` repo; on
-  a plain-copy machine, Zprezto's own installer creates them). `zpreztorc`
-  is trimmed to 9 of Prezto's modules — `directory`, `terminal`, and
-  `utility` were dropped as unused (no bare-dirname `cd`/pushd habit, no
-  tab-title watching, and `utility`'s ~60 aliases like `ll`/`la` are
-  superseded by aliases already in `zshrc`). `zshrc` has `startx` on tty1,
-  `wifi` alias, `vim=nvim`, `skim`/`skif` (EDITOR=nvim variants),
-  `skap` (copy a fzf pick into the tmux buffer), the wenv/skag/skak
-  integration, and re-sources `zsh/zprezto/prompt_steeef_setup` right after
-  Prezto loads, to override Prezto's stock `steeef` theme with this repo's
-  customized one (`@`/`:` separators instead of `at`/`in`, no editor-mode
-  indicator in the prompt).
+- **zsh** (no framework) — `zsh/zprofile` and `zsh/zshrc` are hand-rolled;
+  this repo used to run on [Zprezto](https://github.com/sorin-ionescu/prezto)
+  but was collapsed to plain zsh after auditing exactly which of its modules
+  were actually in use. What's kept, and how:
+  - **Prompt** — `zsh/prompt_steeef_setup`, this repo's own customization of
+    Prezto's old `steeef` theme (`@`/`:` separators instead of `at`/`in`, no
+    editor-mode indicator), sourced directly by `zshrc`.
+  - **Syntax highlighting** (commands green/red depending on whether
+    they're found on `$PATH`, bracket matching, root-user warning) via
+    [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting).
+  - **Up/Down-arrow history search** (and vi-normal-mode `k`/`j`) via
+    [zsh-history-substring-search](https://github.com/zsh-users/zsh-history-substring-search).
+  - **Fish-style autosuggestions** (greyed-out ghost text predicting the
+    rest of a command from history as you type) via
+    [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions).
+  - **Completion** — cached `compinit` (rebuilds at most once every 20
+    hours), colorized/grouped menus, typo-tolerant fuzzy matching,
+    case-insensitive matching, and a nicer `kill`/process-list completer,
+    plus extra completion definitions from
+    [zsh-completions](https://github.com/zsh-users/zsh-completions).
+  - **vi-mode** — just the mode toggle itself (`bindkey -v`); deliberately
+    no Home/End/arrow-key/Ctrl-arrow bindings in insert mode (plain
+    `h`/`j`/`k`/`l` after `Esc` instead) — a deliberate choice, not an
+    oversight, made when collapsing off Prezto.
+  - **History** — `HISTSIZE`/`SAVEHIST=10000`, deduped, shared live across
+    every open shell/pane (`SHARE_HISTORY`).
+  - A few small extras: pasted URLs with special characters get
+    auto-escaped instead of breaking the command line (stock zsh functions,
+    `url-quote-magic`/`bracketed-paste-url-magic`, not a plugin); nicer
+    `less`/man-page colors; Ctrl-S/Ctrl-Q no longer freeze/resume the
+    terminal (`LESS_TERMCAP_*`/`stty -ixon` in `zprofile`).
+
+  `zshrc` also has `startx` on tty1, `wifi` alias, `vim=nvim`, `skim`/`skif`
+  (EDITOR=nvim variants), `skap` (copy a fzf pick into the tmux buffer), and
+  the wenv/skag/skak integration.
 - **tmux** — `tmux/tmux.conf`. Adds `focus-events`/`extended-keys` for
   nvim/tmux interop and a `choose-tree` session-sort binding. Reload is
   bound to `~/.tmux.conf` (this repo's actual convention — not
@@ -335,11 +372,11 @@ from this.
 
 Home-manager's `programs.zsh` module generates its own
 `.zshenv`/`.zprofile`/`.zshrc`/`.zlogin`/`.zlogout` via `home.file`. Since
-Zprezto's runcoms are hand-managed here instead, turning on `programs.zsh`
-would collide with the manual `home.file` entries for those same paths
-(home-manager warns `"<path> conflicts with recursively symlinked file"`
-and silently lets one clobber the other). `zsh` is installed as a plain
-package in `home.packages` instead.
+`.zprofile`/`.zshrc` are hand-managed here instead, turning on
+`programs.zsh` would collide with the manual `home.file` entries for those
+same paths (home-manager warns `"<path> conflicts with recursively
+symlinked file"` and silently lets one clobber the other). `zsh` is
+installed as a plain package in `home.packages` instead.
 
 ## Adding your own wenvs
 

@@ -34,20 +34,29 @@ export FZF_DEFAULT_COMMAND="find . -type f ! -path '*/\.git/*' ! -path '*/\node_
 # Python, don't create __pycache__
 export PYTHONDONTWRITEBYTECODE=1
 
-# `ls` colors — set explicitly to Prezto's own default
-# (modules/completion/init.zsh), rather than leaving it unset and relying
-# on Prezto's `${LS_COLORS:-default}` fallback to fill it in. That fallback
-# only fires the *first* time it runs with LS_COLORS unset — but zshrc
-# re-sources this file again *after* Prezto's init (so new, non-login
-# shells like tmux panes still get these vars), and unsetting here on that
-# second pass wiped out whatever Prezto had just set. Setting the same
-# fixed string outright instead is idempotent and order-independent: it
-# doesn't matter how many times, or in what order relative to Prezto's
-# init, this line runs — the result is always this exact value, covering
-# symlinks/executables/pipes/etc, not just directories (`di=`).
+# `ls` colors — covers symlinks/executables/pipes/etc, not just
+# directories (`di=`). zshrc re-sources this file a second time (so new,
+# non-login shells like tmux panes still get these vars too), so this is a
+# plain, idempotent assignment rather than an append — re-running it any
+# number of times always yields this exact value.
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=36;01:cd=33;01:su=31;40;07:sg=36;40;07:tw=32;40;07:ow=33;40;07:'
 # If dark-blue directories (di=34) are ever hard to read again, swap just
 # that field for e.g. `di=1;96` (bright cyan) in the line above.
+
+# Nicer colors in `less`/man pages (bold/underline rendered in color instead
+# of the terminal's raw bold/underline escapes) — ported from Prezto's
+# environment module, which just exported these unconditionally too.
+export LESS_TERMCAP_mb=$'\E[01;31m'       # Begins blinking.
+export LESS_TERMCAP_md=$'\E[01;31m'       # Begins bold.
+export LESS_TERMCAP_me=$'\E[0m'           # Ends mode.
+export LESS_TERMCAP_se=$'\E[0m'           # Ends standout-mode.
+export LESS_TERMCAP_so=$'\E[00;47;30m'    # Begins standout-mode.
+export LESS_TERMCAP_ue=$'\E[0m'           # Ends underline.
+export LESS_TERMCAP_us=$'\E[01;32m'       # Begins underline.
+
+# Stop Ctrl-S/Ctrl-Q from freezing/resuming the terminal (XON/XOFF flow
+# control) so they're free to use as keybindings instead.
+[[ -r ${TTY:-} && -w ${TTY:-} && $+commands[stty] == 1 ]] && stty -ixon <$TTY >$TTY
 
 # pyenv (only if installed)
 if command -v pyenv >/dev/null 2>&1 || [[ -d "$HOME/.pyenv" ]]; then
@@ -55,8 +64,6 @@ if command -v pyenv >/dev/null 2>&1 || [[ -d "$HOME/.pyenv" ]]; then
     command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
     eval "$(pyenv init -)"
 fi
-
-export JIRA_API_TOKEN="6320OXnw6QnuL30IAofI858E"
 
 # Machine/employer-specific env vars that don't belong in a shared, public
 # repo (e.g. an internal NIX_PATH override, a company GOPATH/dx-tool setup)

@@ -1,15 +1,61 @@
-# Source Prezto.
-if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
-  source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+########################################
+# History
+########################################
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=10000
+SAVEHIST=$HISTSIZE
+setopt BANG_HIST              # Treat '!' specially during history expansion.
+setopt EXTENDED_HISTORY       # Write history in ':start:elapsed;command' format.
+setopt SHARE_HISTORY          # Share history live between all open sessions/panes.
+setopt HIST_EXPIRE_DUPS_FIRST # Expire a duplicate event first when trimming history.
+setopt HIST_IGNORE_DUPS       # Don't record an event that was just recorded again.
+setopt HIST_IGNORE_ALL_DUPS   # Delete an old recorded event if a new event duplicates it.
+setopt HIST_FIND_NO_DUPS      # Don't display a previously found event more than once.
+setopt HIST_IGNORE_SPACE      # Don't record an event starting with a space.
+setopt HIST_SAVE_NO_DUPS      # Don't write a duplicate event to the history file.
+setopt HIST_VERIFY            # Don't execute immediately on history expansion (e.g. !!).
+setopt HIST_BEEP              # Beep when accessing a nonexistent history entry.
+setopt CLOBBER
+
+########################################
+# Pasted-URL auto-escaping
+########################################
+# Auto-quotes special characters (spaces, ?, &, ...) in a pasted URL instead
+# of letting them break the command line. Both are stock zsh functions
+# (Functions/Zle/url-quote-magic, bracketed-paste-url-magic), not a
+# third-party plugin — ported directly from Prezto's environment module,
+# which was just a thin wrapper enabling them.
+autoload -Uz is-at-least
+if [[ $ZSH_VERSION != 5.1.1 && $TERM != dumb ]]; then
+  if is-at-least 5.2; then
+    autoload -Uz bracketed-paste-url-magic
+    zle -N bracketed-paste bracketed-paste-url-magic
+  elif is-at-least 5.1; then
+    autoload -Uz bracketed-paste-magic
+    zle -N bracketed-paste bracketed-paste-magic
+  fi
+  autoload -Uz url-quote-magic
+  zle -N self-insert url-quote-magic
 fi
 
-# Override Prezto's stock `steeef` prompt with this repo's customized
-# version. Prepending our dir to $fpath doesn't work here — Prezto's own
-# module loader (in init.zsh above) prepends its stock functions/ dir to
-# $fpath too, after ours, so its version still wins the autoload. Instead,
-# source the override directly: it ends with `prompt_steeef_setup "$@"`, so
-# this redefines the function Prezto already autoloaded and re-applies it.
-[[ -r "$HOME/src/dotfiles/zsh/zprezto/prompt_steeef_setup" ]] && source "$HOME/src/dotfiles/zsh/zprezto/prompt_steeef_setup"
+########################################
+# vi-mode keybindings
+########################################
+# Deliberately minimal — just the mode toggle itself (Esc to leave insert
+# mode, standard vi motions in normal mode). No Home/End/arrow-key/Ctrl-
+# arrow bindings: in bare vi-mode these need explicit terminal-escape-
+# sequence bindings to work at all (a deliberate choice, not an oversight —
+# plain h/j/k/l after Esc instead).
+bindkey -v
+
+########################################
+# Prompt
+########################################
+[[ -r "$HOME/src/dotfiles/zsh/prompt_steeef_setup" ]] && source "$HOME/src/dotfiles/zsh/prompt_steeef_setup"
+
+# zprofile is normally sourced automatically before zshrc in a login shell,
+# but not for non-login interactive shells (e.g. a new tmux pane) — source
+# it explicitly here too so $PATH/$XDG_*/etc. are set either way.
 source "$HOME/.zprofile"
 
 # Force 256-color support when connected via Mosh
@@ -38,19 +84,116 @@ alias vim="nvim"
 alias skim="EDITOR=nvim skak"
 alias skif="EDITOR=nvim skaf"
 
-## WENV
-source $SRC/wenv/wenv
-fpath=($XDG_DATA_HOME/zsh/completions $fpath)
+########################################
+# Completion
+########################################
+# fpath must include these entries before compinit runs below, and compinit
+# must have run (so `compdef` exists) before wenv is sourced after this
+# block — wenv's own script calls `compdef` directly at source time.
+fpath=(
+  $XDG_DATA_HOME/zsh-plugins/zsh-completions/src
+  $XDG_DATA_HOME/zsh/completions
+  $fpath
+)
 # Homebrew's own zsh completions, only present on a Mac with Homebrew installed
 [[ -d /opt/homebrew/share/zsh/site-functions ]] && fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+
+# Ported from Prezto's completion module.
+setopt COMPLETE_IN_WORD     # Complete from both ends of a word.
+setopt ALWAYS_TO_END        # Move cursor to the end of a completed word.
+setopt PATH_DIRS            # Perform path search even on command names with slashes.
+setopt AUTO_MENU            # Show completion menu on a successive tab press.
+setopt AUTO_LIST            # Automatically list choices on ambiguous completion.
+setopt AUTO_PARAM_SLASH     # If completed parameter is a directory, add a trailing slash.
+setopt EXTENDED_GLOB        # Needed for the glob qualifier compinit caching uses below —
+                            # without it, `(#qNmh-20)` is a literal string, not a glob
+                            # test, making the cache-freshness check always true and the
+                            # cache file never actually get created.
+unsetopt MENU_COMPLETE      # Don't autoselect the first completion entry.
+unsetopt FLOW_CONTROL       # Disable start/stop characters (Ctrl-S/Ctrl-Q) in the line editor.
+
+# Cache compinit's dump for 20 hours so it (almost) only rebuilds once a day.
+autoload -Uz compinit
+_comp_path="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
+if [[ $_comp_path(#qNmh-20) ]]; then
+  compinit -C -d "$_comp_path"
+else
+  mkdir -p "$_comp_path:h"
+  compinit -i -d "$_comp_path"
+  touch "$_comp_path"
+fi
+unset _comp_path
+
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*:default' list-prompt '%S%M matches%s'
+zstyle ':completion::complete:*' use-cache on
+zstyle ':completion::complete:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompcache"
+# Case-insensitive (all), partial-word, then substring completion.
+zstyle ':completion:*' matcher-list 'm:{[:lower:]}={[:upper:]}' 'm:{[:upper:]}={[:lower:]}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*:*:*:*:*' menu select
+zstyle ':completion:*:matches' group 'yes'
+zstyle ':completion:*:options' description 'yes'
+zstyle ':completion:*:options' auto-description '%d'
+zstyle ':completion:*:corrections' format ' %F{green}-- %d (errors: %e) --%f'
+zstyle ':completion:*:descriptions' format ' %F{yellow}-- %d --%f'
+zstyle ':completion:*:messages' format ' %F{purple} -- %d --%f'
+zstyle ':completion:*:warnings' format ' %F{red}-- no matches found --%f'
+zstyle ':completion:*' format ' %F{yellow}-- %d --%f'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' verbose yes
+# Fuzzy/typo-tolerant matching, scaling max errors with the typed word's length.
+zstyle ':completion:*' completer _complete _match _approximate
+zstyle ':completion:*:match:*' original only
+zstyle ':completion:*:approximate:*' max-errors 1 numeric
+zstyle -e ':completion:*:approximate:*' max-errors 'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
+zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
+zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
+zstyle ':completion:*:*:cd:*:directory-stack' menu yes select
+zstyle ':completion:*:-tilde-:*' group-order 'named-directories' 'path-directories' 'users' 'expand'
+zstyle ':completion:*' squeeze-slashes true
+zstyle ':completion:*:history-words' stop yes
+zstyle ':completion:*:history-words' remove-all-dups yes
+zstyle ':completion:*:history-words' list false
+zstyle ':completion:*:history-words' menu yes
+zstyle ':completion::*:(-command-|export):*' fake-parameters ${${${_comps[(I)-value-*]#*,}%%,*}:#-*-}
+zstyle -e ':completion:*:hosts' hosts 'reply=(
+  ${=${=${=${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2> /dev/null)"}%%[#| ]*}//\]:[0-9]*/ }//,/ }//\[/ }
+  ${=${(f)"$(cat /etc/hosts(|)(N))"}%%\#*}
+  ${=${${${${(@M)${(f)"$(cat ~/.ssh/config 2> /dev/null)"}:#Host *}#Host }:#*\**}:#*\?*}}
+)'
+# Don't complete uninteresting system users...
+zstyle ':completion:*:*:*:users' ignored-patterns \
+  adm amanda apache avahi beaglidx bin cacti canna clamav daemon \
+  dbus distcache dovecot fax ftp games gdm gkrellmd gopher \
+  hacluster haldaemon halt hsqldb ident junkbust ldap lp mail \
+  mailman mailnull mldonkey mysql nagios \
+  named netdump news nfsnobody nobody nscd ntp nut nx openvpn \
+  operator pcap postfix postgres privoxy pulse pvm quagga radvd \
+  rpc rpcuser rpm shutdown squid sshd sync uucp vcsa xfs '_*'
+# ... unless we really want to.
+zstyle '*' single-ignored show
+zstyle ':completion:*:(rm|kill|diff):*' ignore-line other
+zstyle ':completion:*:rm:*' file-patterns '*:all-files'
+# Kill/process completion, with its own coloring.
+zstyle ':completion:*:*:*:*:processes' command 'ps -u $LOGNAME -o pid,user,command -w'
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#) ([0-9a-z-]#)*=01;36=0=01'
+zstyle ':completion:*:*:kill:*' menu yes select
+zstyle ':completion:*:*:kill:*' force-list always
+zstyle ':completion:*:*:kill:*' insert-ids single
+
+autoload bashcompinit
+bashcompinit
+
+## WENV
+# Sourced after compinit above — wenv's own script calls `compdef` directly
+# at source time, which only exists once compinit has already run.
+source $SRC/wenv/wenv
 
 wenv_prompt() {
 	[[ -n "$WENV" ]] && echo "($WENV) "
 }
 setopt prompt_subst
 PS1="\$(wenv_prompt)$PS1"
-setopt HIST_IGNORE_SPACE
-setopt CLOBBER
 
 # Makes it so that the wenv associated with a given tmux session is loaded
 # automatically in new panes/windows within that session (see wenv's README,
@@ -58,10 +201,31 @@ setopt CLOBBER
 # older `wenv_exec -c` this used to call is now deprecated upstream).
 [[ -n "$WENV" ]] && wenv_source -c "$WENV"
 
-autoload compinit
-compinit
-autoload bashcompinit
-bashcompinit
+########################################
+# Syntax highlighting, history-substring-search, autosuggestions
+########################################
+# Sourced in this order — syntax-highlighting, then history-substring-
+# search, then autosuggestions — matching years of actually-working Prezto
+# config, not upstream's own (somewhat contradictory, mutually-conflicting)
+# load-order advice.
+source "$XDG_DATA_HOME/zsh-plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+ZSH_HIGHLIGHT_HIGHLIGHTERS=(main brackets pattern root)
+typeset -A ZSH_HIGHLIGHT_STYLES
+ZSH_HIGHLIGHT_STYLES[globbing]='fg=cyan'
+ZSH_HIGHLIGHT_STYLES[single-quoted-argument]='fg=cyan,bold'
+ZSH_HIGHLIGHT_STYLES[double-quoted-argument]='fg=cyan,bold'
+
+source "$XDG_DATA_HOME/zsh-plugins/zsh-history-substring-search/zsh-history-substring-search.zsh"
+HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND='bg=magenta,fg=white,bold'
+HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND='bg=red,fg=white,bold'
+zmodload zsh/terminfo
+bindkey -M viins "$terminfo[kcuu1]" history-substring-search-up
+bindkey -M viins "$terminfo[kcud1]" history-substring-search-down
+bindkey -M vicmd "k" history-substring-search-up
+bindkey -M vicmd "j" history-substring-search-down
+
+source "$XDG_DATA_HOME/zsh-plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
 
 ## FUNCTIONS
 chpwd() {

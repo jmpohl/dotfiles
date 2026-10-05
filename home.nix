@@ -1,14 +1,6 @@
 { config, lib, pkgs, wenv, ... }:
 
 let
-  zprezto = pkgs.fetchgit {
-    url = "https://github.com/sorin-ionescu/prezto.git";
-    rev = "cff2d01871425b1b80710f8ec6a475c5a53145b4";
-    sha256 = "sha256-TgdyG1XiQh61F2JPUChXe2srUxnJYOa5K1wLaRnmTlA=";
-    fetchSubmodules = true;
-    leaveDotGit = false;
-  };
-
   # Every repo-tracked config file below is linked via mkOutOfStoreSymlink
   # instead of a plain `source = ./path` — home-manager's usual behavior
   # copies the file into the Nix store and symlinks *there*, which makes it
@@ -64,14 +56,21 @@ in
   ];
 
   ########################################
-  # zsh + Zprezto
+  # zsh (plain — no framework)
   ########################################
+  # Previously ran on Zprezto; collapsed to plain zsh + 4 standalone plugins
+  # (zsh-syntax-highlighting, zsh-autosuggestions, zsh-history-substring-
+  # search, zsh-completions) after going through exactly which Prezto
+  # modules were actually in use. zshrc now sources these plugins directly
+  # instead of going through a framework. See zsh/zshrc for the exact
+  # feature list and ordering rationale.
+  #
   # NOTE: deliberately NOT using programs.zsh.enable — that module generates
   # its own .zshenv/.zprofile/.zshrc/.zlogin/.zlogout via home.file and
   # collides with the ones set explicitly below (home-manager will warn
   # "conflicts with recursively symlinked file" and silently override one
-  # with the other if both are set). Since Zprezto's runcoms are hand-managed
-  # here, zsh itself is just installed as a plain package above.
+  # with the other if both are set). zsh itself is just installed as a
+  # plain package above.
   #
   # These paths point directly at this repo's real files (zsh/, kak/,
   # tmux/, etc.) — the same files install-dotfiles.sh copies for a no-Nix
@@ -79,13 +78,32 @@ in
   # linked via `local` (mkOutOfStoreSymlink, defined above) so the live
   # files stay editable in place.
 
-  home.file.".zprezto".source = zprezto;
-  home.file.".zshenv".source = "${zprezto}/runcoms/zshenv";
-  home.file.".zlogin".source = "${zprezto}/runcoms/zlogin";
-  home.file.".zlogout".source = "${zprezto}/runcoms/zlogout";
   home.file.".zprofile".source = local "zsh/zprofile";
   home.file.".zshrc".source = local "zsh/zshrc";
-  home.file.".zpreztorc".source = local "zsh/zprezto/zpreztorc";
+
+  # The 4 zsh plugins zshrc sources, symlinked to a fixed path rather than
+  # home.packages: none of these packages expose a top-level bin/, so
+  # home.packages wouldn't put anything useful on $PATH anyway, and zshrc —
+  # a plain repo-tracked shell script, not a Nix-templated file — can't
+  # reference an ephemeral, hash-suffixed /nix/store path directly. Fixed
+  # paths under ~/.local/zsh-plugins/ (same ~/.local XDG_DATA_HOME this repo
+  # already uses) let zshrc just `source` a constant path regardless of
+  # which store path backs it this generation. The non-Nix install path
+  # (install-dotfiles.sh / README) clones the same 4 upstream repos into
+  # these exact same directory names, so zshrc doesn't need to know or care
+  # which install method is in play.
+  home.file.".local/zsh-plugins/zsh-syntax-highlighting".source =
+    "${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting";
+  home.file.".local/zsh-plugins/zsh-autosuggestions".source =
+    "${pkgs.zsh-autosuggestions}/share/zsh/plugins/zsh-autosuggestions";
+  home.file.".local/zsh-plugins/zsh-history-substring-search".source =
+    "${pkgs.zsh-history-substring-search}/share/zsh/plugins/zsh-history-substring-search";
+  # Nested under `src` to match zsh-completions' own upstream repo layout
+  # (completion functions live at the repo root under src/) — the non-Nix
+  # path clones that repo as-is, so zshrc's fpath entry
+  # (~/.local/zsh-plugins/zsh-completions/src) is identical either way.
+  home.file.".local/zsh-plugins/zsh-completions/src".source =
+    "${pkgs.zsh-completions}/share/zsh/site-functions";
 
   # wenv completions (see wenv README step 4: symlink _wenv into fpath) —
   # zshrc's `fpath=($XDG_DATA_HOME/zsh/completions $fpath)` expects this.
