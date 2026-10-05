@@ -2,13 +2,17 @@ if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then
 	exec startx;
 fi
 
+# Keeps the `path` array (and the $PATH string it's tied to) deduplicated
+# automatically on every assignment — without this, zshrc re-sourcing this
+# file a second time (for non-login shells) means every `export PATH=...`
+# below just keeps appending another copy of itself. A bloated, duplicate-
+# heavy $PATH isn't just untidy — zsh-syntax-highlighting's command-found
+# check (green/red by $PATH) scans it on every redraw, so this was a real,
+# measurable source of typing lag, not just cosmetic.
+typeset -U path PATH
+
 export PATH="$HOME/bin:$PATH"
-export PATH="$HOME/bin/statusbar:$PATH"
 #export PATH="$PATH:/opt/cisco/anyconnect/bin"
-export PATH="$PATH:$HOME/src/dwm"
-export PATH="$PATH:$HOME/src/st"
-export PATH="$PATH:/home/josie/.local/bin"
-export PATH="$PATH:/home/josie/src/jai/bin"
 #export PATH="$HOME/.local/Slippi-FM-r18/netplay:$PATH"
 export EDITOR="kak_session"
 export SRC=$HOME/src
