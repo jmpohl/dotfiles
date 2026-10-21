@@ -235,9 +235,23 @@ ZSH_HIGHLIGHT_STYLES[double-quoted-argument]='fg=cyan,bold'
 source "$XDG_DATA_HOME/zsh-plugins/zsh-history-substring-search/zsh-history-substring-search.zsh"
 HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND='bg=magenta,fg=white,bold'
 HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND='bg=red,fg=white,bold'
+# Up/Down send one of two different escape sequences depending on whether
+# the terminal is in "application cursor keys" mode: \eOA/\eOB (what
+# $terminfo[kcuu1]/kcud1 report, and all this used to bind) or \e[A/\e[B
+# (most terminals' actual default). Binding only the terminfo one meant
+# this worked only when something else put the terminal into application
+# mode — which Prezto's editor module used to do on every prompt (`echoti
+# smkx`), machinery that was dropped going to plain vi-mode. Binding both
+# sequences directly is more robust than reintroducing that: it works
+# regardless of which mode the terminal happens to be in, with no
+# dependency on terminal-mode-switching bookkeeping at all.
 zmodload zsh/terminfo
-bindkey -M viins "$terminfo[kcuu1]" history-substring-search-up
-bindkey -M viins "$terminfo[kcud1]" history-substring-search-down
+for seq in "$terminfo[kcuu1]" '^[[A' '^[OA'; do
+  [[ -n "$seq" ]] && bindkey -M viins "$seq" history-substring-search-up
+done
+for seq in "$terminfo[kcud1]" '^[[B' '^[OB'; do
+  [[ -n "$seq" ]] && bindkey -M viins "$seq" history-substring-search-down
+done
 bindkey -M vicmd "k" history-substring-search-up
 bindkey -M vicmd "j" history-substring-search-down
 
@@ -338,3 +352,9 @@ restart_nix_daemon() {
 # this repo (see .gitignore) — create it by hand per machine. Sourced last
 # so it can override anything above.
 [[ -r "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+
+export PATH="/Users/jpohl/go/bin:$PATH"
+
+if command -v dx >/dev/null 2>&1 && dx env >/dev/null 2>&1; then
+  eval "$(dx env)"
+fi
