@@ -48,6 +48,16 @@ fi
 # plain h/j/k/l after Esc instead).
 bindkey -v
 
+# Backspace defaults to vi-backward-delete-char, which is deliberately
+# vi-compliant: "If in insert mode, this won't delete past the point where
+# insert mode was last entered" (man zshzle). So Esc into normal mode,
+# move the cursor, then i/a back into insert, and Backspace refuses to
+# delete anything typed before that point — exactly the "can't backspace
+# a path" symptom. backward-delete-char is the same widget minus that
+# restriction.
+bindkey -M viins '^?' backward-delete-char
+bindkey -M viins '^H' backward-delete-char
+
 ########################################
 # Prompt
 ########################################
