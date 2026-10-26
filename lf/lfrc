@@ -125,3 +125,9 @@ map V push :!nvim<space>
 map W $setsid -f $TERMINAL >/dev/null 2>&1
 
 map Y $printf "%s" "$fx" | xclip -selection clipboard
+
+# Copy to the tmux paste buffer (same mechanism skap/lazygit already use in
+# this setup, rather than a clipboard tool like xclip above, which is
+# Linux/X11-only and doesn't exist on macOS).
+map yn $printf "%s" "${f##*/}" | tmux load-buffer -
+map yp $printf "%s" "$f" | tmux load-buffer -
