@@ -58,6 +58,14 @@ bindkey -v
 bindkey -M viins '^?' backward-delete-char
 bindkey -M viins '^H' backward-delete-char
 
+# Ctrl-X Ctrl-E: edit the current command line in $EDITOR (kak_session) —
+# writes the buffer to a temp file, opens it, and feeds the result back in
+# once you save and quit. Stock zsh widget, not Prezto-specific.
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey -M viins '^X^E' edit-command-line
+bindkey -M vicmd '^X^E' edit-command-line
+
 ########################################
 # Prompt
 ########################################
